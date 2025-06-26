@@ -1,0 +1,30 @@
+{
+    "manifest_version": 3, 
+    "name": "CodeTracker: Disability Edition", 
+    "description": "Displays VA disability rating information in a browser extension including the diagnostic codes.", 
+    "version": "1.0", 
+    "action": {
+        "default_popup": "index.html"
+    }, 
+    "icons": {
+        "16": "./images/DD_Logo_16.png",
+        "32": "./images/DD_Logo_32.png",
+        "48": "./images/DD_Logo_48.png",
+        "128": "./images/DD_Logo_128.png"
+    },
+    "background": {
+        "service_worker": "background.js", 
+        "type": "module"
+    }, 
+    "permissions": [
+        "storage",
+        "activeTab",
+        "webRequest", 
+        "webNavigation", 
+        "identity"
+    ],
+    "host_permissions": [
+        "https://api.va.gov/*",
+        "https://*.va.gov/*"
+    ] 
+}

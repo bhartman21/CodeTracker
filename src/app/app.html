@@ -1,0 +1,63 @@
+    <div class="container">
+        <h1 class="title has-text-centered m-3">CodeTracker: Disability Edition</h1>
+        <hr/>
+        <select id="viewerType" class="select m-2" style="width: 20%;">
+            <option value="claimsList">Claims</option>
+            <option value="disabilitiesList" selected="true">Disabilities</option>
+        </select>
+        <button id="clearDataButton" class="button m-2 is-danger" style="font-size: small; width: 20%;">Clear Data</button>
+        <button id="refreshButton" class="button m-2 is-success" style="font-size: small; width: 20%;">Refresh Data</button>
+        <button id="goButton" class="button m-2 is-info" style="font-size: small; width: 20%;">Log into VA.gov</button>
+    </div>
+
+    <div class="container" id="claimsContainer">
+        <p class="subtitle">Loading Claims...</p>
+        <div id="dataList" class="box"></div>
+        <table class="table is-fullwidth is-striped is-hoverable">
+            <thead>
+                <tr>
+                    <th title="Claim ID">Claim ID</th>
+                    <th title="Claim Type">Type</th>
+                </tr>
+            </thead>
+            <tbody id="claimsRows">
+                <!-- Data rows will be populated here -->
+                <tr>
+                    <td colspan="4" class="has-text-centered">No claims available. Please select a viewer type.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+        <hr color="red"/>
+
+    <div class="container" id="disabilityContainer" ng-if="disabilitiesList.length > 0">
+        <!-- Combined Rating Display -->
+        <div id="combinedRatingDisplay" class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;">
+            <!-- Combined rating will be displayed here -->
+        </div>
+
+        <table class="table width: 100%;">
+            <thead>
+                <tr>
+                    <th title="Diagnostic Code">DC</th>
+                    <th title="Service Connected or Not Service Connected">Status</th>
+                    <th title="Disability Title">Disability</th>
+                    <th title="Rating Percentage">Rating</th>
+                    <th title="Is Static">Is Static</th>
+                </tr>
+            </thead>
+            <tbody id="disabilityRows">
+                <!-- Data rows will be populated here -->
+                <tr>
+                    <td colspan="4" class="has-text-centered">No data available. Please select a viewer type.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container">
+    </div>
+
+
+<router-outlet />
