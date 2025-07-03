@@ -1,4 +1,4 @@
-# 🇺🇸 CodeTracker – Disability Edition
+# Veteran CodeTracker – Disability Edition
 
 A Chrome extension built for U.S. veterans to easily retrieve and decode their VA disability information directly from [VA.gov](https://www.va.gov/).  
 No more digging through pages — just the facts you need, when you need them.
