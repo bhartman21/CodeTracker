@@ -1,0 +1,112 @@
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+
+.sortable:hover {
+    background-color: #f5f5f5;
+}
+
+.sort-indicator {
+    margin-left: 5px;
+    font-size: 0.8em;
+    color: #ccc;
+}
+
+.sortable.asc .sort-indicator {
+    color: #007bff;
+}
+
+.sortable.desc .sort-indicator {
+    color: #007bff;
+}
+
+.sortable.asc .sort-indicator::after {
+    content: ' ↑';
+}
+
+.sortable.desc .sort-indicator::after {
+    content: ' ↓';
+}
+/* BELOW THIS IS THE AI GENERATED STYLES */
+
+/* A subtle red-white-blue gradient background */
+body, html {
+    background: linear-gradient(145deg, #ffffff, #e2132b 40%, #0400ff 90%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 10px 10px 0 10px; /* top right bottom left */
+}
+
+/* Create a bold header style */
+.title {
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    background-color: #3c3b6e;
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: center;
+    margin-top: 0;
+}
+
+/* Give buttons a strong patriotic feel */
+.button {
+    background-color: #b22234;
+    color: #fff;
+    border: 1px solid #fff;
+    border-radius: 3px;
+    transition: 0.2s ease;
+}
+
+.button:hover {
+    background-color: #3c3b6e;
+    border-color: #3c3b6e;
+}
+
+/* Keep the container bright and crisp against the gradient */
+.container {
+    background-color: #ffffffcc; /* Slight transparency */
+    backdrop-filter: blur(2px);
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 5px;
+}
+
+/* Table header with a bold navy background */
+.table thead th {
+    background-color: #3c3b6e;
+    color: #fff;
+    font-weight: bold;
+    border-bottom: 2px solid #b22234;
+}
+
+/* Table hover for a neat highlight */
+.table tbody tr:hover {
+    background-color: #f2f2f2;
+}
+
+/* Retain your sorting styles */
+.sortable:hover {
+    background-color: #ececec;
+}
+
+#headerContainer {
+    margin: 0 !important;
+    width: 100%;
+    display: flex;          /* Use flex layout */
+    flex-direction: column; /* Stack rows on top of each other */
+}
+
+.header-row {
+  display: flex;       
+  align-items: center; 
+  gap: 1rem;           
+  margin-bottom: 1rem; /* Spacing between rows */
+}
+
+.logo {
+  max-height: 48px;
+  max-width: 48px;
+}

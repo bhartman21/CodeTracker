@@ -2,10 +2,10 @@ const LOCATION_ENDPOINT = 'https://api.va.gov/v0/rated_disabilities';
 
 export default function fetchDisabilities() {
     // Fetch disabilities from the VA API
-    // and filter the data to include only the necessary fields
     fetch(LOCATION_ENDPOINT)
         .then(response => response.json())
         .then(disability => {
+            // filter the data to include only the necessary fields
             var disabilitiesList = new DisabilityModel({
                 combined_disability_rating: disability.data.attributes.combined_disability_rating,
                 combined_effective_date: disability.data.attributes.combined_effective_date,
@@ -15,7 +15,7 @@ export default function fetchDisabilities() {
             disabilitiesList.individualRatings = disability.data.attributes.individual_ratings;
 
             chrome.storage.local.set({ disabilities: disabilitiesList });
-            console.log(disabilitiesList);
+            //console.log(disabilitiesList);
         })
         .catch(error => {
             console.log(error);

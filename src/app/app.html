@@ -1,28 +1,39 @@
-    <div class="container">
-        <h1 class="title has-text-centered m-3">CodeTracker: Disability Edition</h1>
-        <hr/>
-        <select id="viewerType" class="select m-2" style="width: 17%;">
-            <option value="claimsList">Claims</option>
-            <option value="disabilitiesList" selected="true">Disabilities</option>
-        </select>
-        <button id="clearDataButton" class="button m-2 is-danger" style="font-size: small; width: 17%;">Clear Data</button>
-        <button id="refreshButton" class="button m-2 is-success" style="font-size: small; width: 17%;">Refresh Data</button>
-        <a href="https://tiptopjar.com/bhartman21" target="_blank" rel="noopener noreferrer">
-          <button id="tipButton" class="button m-2 is-warning" style="font-size: small; width: 17%;">
-            💰 Support This Project
-          </button>
-        </a>
-        <button id="goButton" class="button m-2 is-info" style="font-size: small; width: 17%;">Log into VA.gov</button>
+    <div class="container" id="headerContainer">
+        <!-- First row: logo + title -->
+        <div class="header-row">
+            <img src="images/Logo_trimmed.png"
+                alt="CodeTracker Logo"
+                class="logo">
+            <h1 class="title">CodeTracker: {{viewerType}} Edition</h1>
+        </div>
+
+        <!-- Second row: select + buttons -->
+        <div class="header-row">
+            <select id="viewerType" class="select m-2" style="width: 17%;">
+                <option value="claimsList">Claims</option>
+                <option value="disabilitiesList" selected>Disabilities</option>
+            </select>
+            <button id="clearDataButton" class="button m-2 is-danger" style="font-size: small; width: 17%;">Clear Data</button>
+            <button id="refreshButton" class="button m-2 is-success" style="font-size: small; width: 17%;">Refresh Data</button>
+            <button id="tipButton" class="button m-2 is-warning" style="font-size: small; width: 17%; color: #ffffff; background-color: #0000ff;" (click)="navigateTipJar()">Tip the Dev</button>
+            <button id="goButton" class="button m-2 is-info" style="font-size: small; width: 17%;" [hidden]="isLoggedIn" (click)="navigateToVA()">Log into VA.gov</button>
+        </div>
     </div>
 
-    <div class="container" id="claimsContainer">
-        <p class="subtitle">Loading Claims...</p>
-        <div id="dataList" class="box"></div>
-        <table class="table is-fullwidth is-striped is-hoverable">
+    <div class="container" id="claimsContainer" ng-if="claimsList.length > 0">
+        <div class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;" id="claimsLoadingMessage">
+            <!-- Loading message will be displayed here -->
+            Loading claims data...
+        </div>
+        
+        <table class="m-3 table width: 100%;">
             <thead>
                 <tr>
                     <th title="Claim ID">Claim ID</th>
-                    <th title="Claim Type">Type</th>
+                    <th title="Claim Type">Claim Type</th>
+                    <th title="Claim Code">Claim Code</th>
+                    <th title="Claim Status">Status</th>
+                    <th title="Claim Date">Date</th>
                 </tr>
             </thead>
             <tbody id="claimsRows">
@@ -34,22 +45,35 @@
         </table>
     </div>
 
-        <hr color="red"/>
-
     <div class="container" id="disabilityContainer" ng-if="disabilitiesList.length > 0">
+        <div class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;" id="disabilitiesLoadingMessage">
+            <!-- Loading message will be displayed here -->
+            Loading disabilities data...
+        </div>
+
         <!-- Combined Rating Display -->
         <div id="combinedRatingDisplay" class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;">
             <!-- Combined rating will be displayed here -->
         </div>
 
-        <table class="table width: 100%;">
+        <table class="m-3 table width: 100%;">
             <thead>
                 <tr>
-                    <th title="Diagnostic Code">DC</th>
-                    <th title="Service Connected or Not Service Connected">Status</th>
-                    <th title="Disability Title">Disability</th>
-                    <th title="Rating Percentage">Rating</th>
-                    <th title="Is Static">Is Static</th>
+                    <th title="Diagnostic Code" class="sortable" data-sort="diagnosticCode">
+                        DC <span class="sort-indicator"></span>
+                    </th>
+                    <th title="Service Connected or Not Service Connected" class="sortable" data-sort="status">
+                        Status <span class="sort-indicator"></span>
+                    </th>
+                    <th title="Disability Title" class="sortable" data-sort="disability">
+                        Disability <span class="sort-indicator"></span>
+                    </th>
+                    <th title="Rating Percentage" class="sortable" data-sort="rating">
+                        Rating <span class="sort-indicator"></span>
+                    </th>
+                    <th title="Is Static" class="sortable" data-sort="isStatic">
+                        Is Static <span class="sort-indicator"></span>
+                    </th>
                 </tr>
             </thead>
             <tbody id="disabilityRows">
