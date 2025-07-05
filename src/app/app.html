@@ -1,3 +1,52 @@
+    <div class="container py-4">
+        <h1 class="mb-4 text-center">CodeTracker: {{viewerType}} Edition</h1>
+
+        <div class="d-flex justify-content-end action-toolbar mb-3">
+            <select id="viewerType" class="select m-2">
+                <option value="claimsList">Claims</option>
+                <option value="disabilitiesList" selected>Disabilities</option>
+            </select>
+            <button class="btn btn-danger btn-sm">Clear Data</button>
+            <button class="btn btn-primary btn-sm">Refresh Data</button>
+            <button class="btn btn-info btn-sm text-white">Tip the Dev</button>
+            <button class="btn btn-dark btn-sm">Log into VA.gov</button>
+        </div>        
+
+        <div class="row">
+            <div class="container" id="claimsContainer" ng-if="claimsList.length > 0">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">Your Claims</div>
+                    <div class="card-body p-0">
+
+                        <div class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;" id="claimsLoadingMessage">
+                            <!-- Loading message will be displayed here -->
+                            Loading claims data...
+                        </div>
+                        
+                        <table class="table table-sm table-striped-columns">
+                            <thead>
+                                <tr>
+                                    <th title="Claim ID">Claim ID</th>
+                                    <th title="Claim Type">Claim Type</th>
+                                    <th title="Claim Code">Claim Code</th>
+                                    <th title="Claim Status">Status</th>
+                                    <th title="Claim Date">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="claimsRows">
+                                <!-- Data rows will be populated here -->
+                                <tr>
+                                    <td colspan="4" class="has-text-centered">No claims available. Please select a viewer type.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <div class="container" id="headerContainer">
         <!-- First row: logo + title -->
         <div class="header-row">
@@ -20,30 +69,6 @@
         </div>
     </div>
 
-    <div class="container" id="claimsContainer" ng-if="claimsList.length > 0">
-        <div class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;" id="claimsLoadingMessage">
-            <!-- Loading message will be displayed here -->
-            Loading claims data...
-        </div>
-        
-        <table class="m-3 table width: 100%;">
-            <thead>
-                <tr>
-                    <th title="Claim ID">Claim ID</th>
-                    <th title="Claim Type">Claim Type</th>
-                    <th title="Claim Code">Claim Code</th>
-                    <th title="Claim Status">Status</th>
-                    <th title="Claim Date">Date</th>
-                </tr>
-            </thead>
-            <tbody id="claimsRows">
-                <!-- Data rows will be populated here -->
-                <tr>
-                    <td colspan="4" class="has-text-centered">No claims available. Please select a viewer type.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
 
     <div class="container" id="disabilityContainer" ng-if="disabilitiesList.length > 0">
         <div class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;" id="disabilitiesLoadingMessage">

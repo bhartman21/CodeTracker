@@ -30,6 +30,27 @@
     content: ' ↓';
 }
 /* BELOW THIS IS THE AI GENERATED STYLES */
+.card {
+    margin-bottom: 1rem;
+}
+.rating-header {
+    background-color: #28a745;
+    color: white;
+    font-weight: bold;
+}
+.rating-zero {
+    color: #6c757d;
+}
+.claim-status {
+    font-size: 0.9rem;
+}
+.badge-status {
+    font-size: 0.75rem;
+}
+.action-toolbar button {
+    margin-right: 0.5rem;
+}
+
 
 /* A subtle red-white-blue gradient background */
 body, html {

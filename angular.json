@@ -39,6 +39,11 @@
                 "glob": "**/*", 
                 "input": "src/api", 
                 "output": "api"
+              }, 
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets"
               }
             ],
             "styles": [
