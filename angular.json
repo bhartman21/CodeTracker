@@ -23,6 +23,12 @@
               "zone.js"
             ],
             "tsConfig": "tsconfig.app.json",
+            "inlineStyleLanguage": "css",
+            "optimization": {
+              "styles": {
+                "inlineCritical": false
+              }
+            },
             "assets": [
               {
                 "glob": "**/*",
@@ -47,7 +53,7 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css" 
             ]
           },
           "configurations": {

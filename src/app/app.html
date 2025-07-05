@@ -1,117 +1,114 @@
-    <div class="container py-4">
-        <h1 class="mb-4 text-center">CodeTracker: {{viewerType}} Edition</h1>
-
-        <div class="d-flex justify-content-end action-toolbar mb-3">
-            <select id="viewerType" class="select m-2">
-                <option value="claimsList">Claims</option>
-                <option value="disabilitiesList" selected>Disabilities</option>
-            </select>
-            <button class="btn btn-danger btn-sm">Clear Data</button>
-            <button class="btn btn-primary btn-sm">Refresh Data</button>
-            <button class="btn btn-info btn-sm text-white">Tip the Dev</button>
-            <button class="btn btn-dark btn-sm">Log into VA.gov</button>
-        </div>        
-
-        <div class="row">
-            <div class="container" id="claimsContainer" ng-if="claimsList.length > 0">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">Your Claims</div>
-                    <div class="card-body p-0">
-
-                        <div class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;" id="claimsLoadingMessage">
-                            <!-- Loading message will be displayed here -->
-                            Loading claims data...
-                        </div>
-                        
-                        <table class="table table-sm table-striped-columns">
-                            <thead>
-                                <tr>
-                                    <th title="Claim ID">Claim ID</th>
-                                    <th title="Claim Type">Claim Type</th>
-                                    <th title="Claim Code">Claim Code</th>
-                                    <th title="Claim Status">Status</th>
-                                    <th title="Claim Date">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody id="claimsRows">
-                                <!-- Data rows will be populated here -->
-                                <tr>
-                                    <td colspan="4" class="has-text-centered">No claims available. Please select a viewer type.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+    <div class="min-h-screen bg-gray-50">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-semibold text-gray-900">CodeTracker:</h1>
+                        <span class="ml-2 text-sm text-gray-700">Disability & Claims Edition</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="clearDataButton" class="btn-secondary bg-red-500">Clear Data</button>
+                        <button id="refreshButton" class="btn-secondary bg-green-500">Refresh Data</button>
+                        <button (click)="navigateToVA()" class="btn-secondary bg-gray-500" [hidden]="isLoggedIn">Log into VA.gov</button>
+                        <button (click)="navigateTipJar()" class="btn-primary">Tip the Dev</button>
                     </div>
                 </div>
             </div>
-        </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Tab Navigation -->
+            <div class="mb-8">
+                <nav class="flex space-x-8">
+                    <button [class]="viewerType === 'Disability' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200"
+                    (click)="switchViewer('Disability')">Disability Ratings</button>
+                    <button [class]="viewerType === 'Claims' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200"
+                    (click)="switchViewer('Claims')">Claims Status</button>
+                </nav>
+            </div>
+
+            <!-- Content Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content Area -->
+            <div class="lg:col-span-2">
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                        {{ viewerType === 'Disability' ? 'Disability Ratings' : 'Claims Status' }}
+                        </h2>
+                        <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-500">Last updated:</span>
+                        <span class="text-sm font-medium text-gray-900">{{ lastUpdated || 'Historic Data' }}</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Disabilitiy Table Container -->
+                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg" *ngIf="viewerType==='Disability'">
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-lg text-gray-600">Combined Rating</span>
+                                <span class="text-xl text-gray-600" id="combinedRatingDisplay">--</span>
+                            </div>
+                        </div>
+
+                        <table class="min-w-full divide-y divide-gray-300">
+                        <thead class="table-header">
+                            <tr>
+                                <th class="px-3 py-3 text-left">Diag. Code</th>
+                                <th class="px-6 py-3 text-left">Status</th>
+                                <th class="px-6 py-3 text-left">Condition</th>
+                                <th class="px-6 py-3 text-left">Rating</th>
+                                <th class="px-6 py-3 text-left">Static?</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white" id="disabilityRows">
+                            <!-- Dynamic content will be inserted here -->
+                        </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Cliams Table Container -->
+                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg" *ngIf="viewerType==='Claims'">
+                        <table class="min-w-full divide-y divide-gray-300">
+                        <thead class="table-header">
+                            <tr>
+                                <th class="px-6 py-3 text-left">Claim ID</th>
+                                <th class="px-6 py-3 text-left">Claim Type</th>
+                                <th class="px-6 py-3 text-left">Claim Code</th>
+                                <th class="px-6 py-3 text-left">Status </th>
+                                <th class="px-6 py-3 text-left">Closed Date</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200 bg-white" id="claimsRows">
+                            <!-- Dynamic content will be inserted here -->
+                        </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-8" ngIf="0===1">
+                <!-- Login Status Card -->
+                <div class="card">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Login Status</h3>
+                <div class="flex items-center space-x-3">
+                    <div [class]="isLoggedIn ? 'bg-green-100' : 'bg-red-100'" class="w-3 h-3 rounded-full"></div>
+                    <span [class]="isLoggedIn ? 'text-green-800' : 'text-red-800'" class="text-sm font-medium">
+                    {{ isLoggedIn ? 'Connected' : 'Disconnected' }}
+                    </span>
+                </div>
+                </div>
+            </div>
+            </div>
+
+        </main>
+
     </div>
-
-
-    <div class="container" id="headerContainer">
-        <!-- First row: logo + title -->
-        <div class="header-row">
-            <img src="images/Logo_trimmed.png"
-                alt="CodeTracker Logo"
-                class="logo">
-            <h1 class="title">CodeTracker: {{viewerType}} Edition</h1>
-        </div>
-
-        <!-- Second row: select + buttons -->
-        <div class="header-row">
-            <select id="viewerType" class="select m-2" style="width: 17%;">
-                <option value="claimsList">Claims</option>
-                <option value="disabilitiesList" selected>Disabilities</option>
-            </select>
-            <button id="clearDataButton" class="button m-2 is-danger" style="font-size: small; width: 17%;">Clear Data</button>
-            <button id="refreshButton" class="button m-2 is-success" style="font-size: small; width: 17%;">Refresh Data</button>
-            <button id="tipButton" class="button m-2 is-warning" style="font-size: small; width: 17%; color: #ffffff; background-color: #0000ff;" (click)="navigateTipJar()">Tip the Dev</button>
-            <button id="goButton" class="button m-2 is-info" style="font-size: small; width: 17%;" [hidden]="isLoggedIn" (click)="navigateToVA()">Log into VA.gov</button>
-        </div>
-    </div>
-
-
-    <div class="container" id="disabilityContainer" ng-if="disabilitiesList.length > 0">
-        <div class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;" id="disabilitiesLoadingMessage">
-            <!-- Loading message will be displayed here -->
-            Loading disabilities data...
-        </div>
-
-        <!-- Combined Rating Display -->
-        <div id="combinedRatingDisplay" class="notification is-info has-text-centered" style="display: none; margin-bottom: 1rem;">
-            <!-- Combined rating will be displayed here -->
-        </div>
-
-        <table class="m-3 table width: 100%;">
-            <thead>
-                <tr>
-                    <th title="Diagnostic Code" class="sortable" data-sort="diagnosticCode">
-                        DC <span class="sort-indicator"></span>
-                    </th>
-                    <th title="Service Connected or Not Service Connected" class="sortable" data-sort="status">
-                        Status <span class="sort-indicator"></span>
-                    </th>
-                    <th title="Disability Title" class="sortable" data-sort="disability">
-                        Disability <span class="sort-indicator"></span>
-                    </th>
-                    <th title="Rating Percentage" class="sortable" data-sort="rating">
-                        Rating <span class="sort-indicator"></span>
-                    </th>
-                    <th title="Is Static" class="sortable" data-sort="isStatic">
-                        Is Static <span class="sort-indicator"></span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody id="disabilityRows">
-                <!-- Data rows will be populated here -->
-                <tr>
-                    <td colspan="4" class="has-text-centered">No data available. Please select a viewer type.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div class="container">
-    </div>
-
 
 <router-outlet />

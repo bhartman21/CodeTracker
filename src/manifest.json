@@ -5,7 +5,7 @@
     "version": "1.0", 
     "action": {
         "default_popup": "index.html"
-    }, 
+    },
     "icons": {
         "16": "./images/Logo_noText_16.png",
         "32": "./images/Logo_noText_32.png",
@@ -26,5 +26,8 @@
     "host_permissions": [
         "https://api.va.gov/*",
         "https://*.va.gov/*"
-    ] 
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; object-src 'self'"
+    }
 }

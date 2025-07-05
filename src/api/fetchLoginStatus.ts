@@ -1,40 +1,47 @@
 const LOCATION_ENDPOINT = "https://api.va.gov/v0/profile/full_name";
 
-export default function fetchLoginStatus() {
-    let loginStatus: LoginStatusModel = new LoginStatusModel({});
-    fetch(LOCATION_ENDPOINT)
-        .then(response => response.json())
-        .then(data => { 
-            loginStatus = new LoginStatusModel({
-                is_logged_in: true,
-                first_name: data.first,
-                middle_name: data.middle,
-                last_name: data.last,
-                suffix: data.suffix,
-                full_name: data.first + ' ' + (data.middle ? data.middle + ' ' : '') + data.last + (data.suffix ? ', ' + data.suffix : '')
-            });
-            console.log(loginStatus.fullName);
-        })
-        .catch(error => {
-            error.message = "You are not logged in. Please log in to the VA website.";
-            loginStatus = new LoginStatusModel({
-                is_logged_in: false,
-                first_name: null,
-                middle_name: null,
-                last_name: null,
-                suffix: null,
-                full_name: error.message
-            });
-            console.log(error.message);
-        })
-        .finally(() => {
-            // Store the login status in Chrome storage
-            if (loginStatus) {
-                chrome.storage.local.set({ loginStatus });
-            }
-        });
+export default async function fetchLoginStatus(): Promise<LoginStatusModel> {
+    try{
+        const response = await fetch(LOCATION_ENDPOINT);
+        
+        if(!response.ok) {
+            throw new Error(`HTTP ERROR! Status: ${response.status}`)
+        }
 
-    return loginStatus;
+        const data = await response.json();
+
+        const loginStatus = new LoginStatusModel({
+            isLoggedIn: true,
+            firstName: data.first,
+            middleName: data.middle,
+            lastName: data.last,
+            suffix: data.suffix,
+            fullName: data.first + ' ' + (data.middle ? data.middle + ' ' : '') + data.last + (data.suffix ? ', ' + data.suffix : '')
+        });
+        
+        console.log('Login successful:', loginStatus.fullName);
+        
+        // Store the login status in Chrome storage
+        chrome.storage.local.set({ loginStatus });
+        
+        return loginStatus;
+    } catch (error) {
+        console.error('Login check failed:', error);
+        
+        const loginStatus = new LoginStatusModel({
+            isLoggedIn: false,
+            firstName: null,
+            middleName: null,
+            lastName: null,
+            suffix: null,
+            fullName: "You are not logged in. Please log in to the VA website."
+        });
+        
+        // Store the login status in Chrome storage
+        chrome.storage.local.set({ loginStatus });
+        
+        return loginStatus;
+    }
 }
 
 export class LoginStatusModel {
@@ -46,19 +53,25 @@ export class LoginStatusModel {
     fullName: string | null;
 
     constructor({
-        is_logged_in = false,
-        first_name = null,
-        middle_name = null,
-        last_name = null,
+        isLoggedIn = false,
+        firstName = null,
+        middleName = null,
+        lastName = null,
         suffix = null, 
-        full_name = ''
-    }) {
-        this.isLoggedIn = is_logged_in;
-        this.firstName = first_name;
-        this.middleName = middle_name;
-        this.lastName = last_name;
+        fullName = ''
+    }: {
+        isLoggedIn?: boolean;
+        firstName?: string | null;
+        middleName?: string | null;
+        lastName?: string | null;
+        suffix?: string | null;
+        fullName?: string | null;
+    } = {}) {
+        this.isLoggedIn = isLoggedIn;
+        this.firstName = firstName;
+        this.middleName = middleName;
+        this.lastName = lastName;
         this.suffix = suffix;
-        this.fullName = full_name;
+        this.fullName = fullName;
     }
 }
-
