@@ -14,8 +14,7 @@ export default function fetchDisabilities() {
             });
             disabilitiesList.individualRatings = disability.data.attributes.individual_ratings;
 
-            chrome.storage.local.set({ disabilities: disabilitiesList });
-            //console.log(disabilitiesList);
+            chrome.storage.local.set({ disabilities: disabilitiesList, disabilitiesUpdated: new Date().toLocaleString() });
         })
         .catch(error => {
             console.log(error);
