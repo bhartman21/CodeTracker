@@ -15,8 +15,7 @@ export default function fetchClaims() {
                 }));
             });
            
-            chrome.storage.local.set({ claims: claimsList });
-            console.log(claimsList);
+            chrome.storage.local.set({ claims: claimsList, claimsUpdated: new Date().toLocaleString() });
         })
         .catch(error => {
             console.log(error);

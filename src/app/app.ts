@@ -7,6 +7,7 @@ import fetchClaims, { ClaimModel } from '../api/fetchClaims';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [RouterOutlet, CommonModule],
   templateUrl: './app.html',
   styleUrl: './app.css'
@@ -19,41 +20,59 @@ export class App implements OnInit, AfterViewInit {
     lastUpdated: string = '';
     
     constructor(private cdr: ChangeDetectorRef) {
-        // Initialize the disability table on component creation
-        // this.populateDisabilityTable();
-        // Check login status
-        this.checkLoginStatus();
+        // Check if chrome APIs are available
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            // this.populateDisabilityTable();
+            // Check login status
+            this.checkLoginStatus();
+        }
     }
 
     private async checkLoginStatus() {
         try {
-            const status = await fetchLoginStatus();
-            this.isLoggedIn = status.isLoggedIn;
-            this.cdr.detectChanges();
+            var makeAPIRequest = true;
+            chrome.storage.local.get(['loginStatus'], (result) => {
+                if (result['loginStatus']) {
+                    this.isLoggedIn = result['loginStatus'].isLoggedIn;
+                    makeAPIRequest = false;
+                }
+            });
+
+            if (makeAPIRequest) {
+                const status = await fetchLoginStatus();
+                this.isLoggedIn = status.isLoggedIn;
+                this.cdr.detectChanges();
+            }
             console.log('Login status updated:', this.isLoggedIn);
         } catch (error) {
-            console.error('Error checking login status:', error);
+            console.log('Error checking login status:', error);
             this.isLoggedIn = false;
             this.cdr.detectChanges();
         }
     }
 
     ngOnInit(): void {
-    // Check what viewer type was last used and load appropriate data
-    chrome.storage.local.get(['currentViewType'], (result) => {
-        if (result['currentViewType']) {
-            this.viewerType = result['currentViewType'];
+        // Check if chrome APIs are available
+        if (typeof chrome === 'undefined' || !chrome.storage) {
+            console.error('Chrome extension APIs not available');
+            return;
         }
+
+        // Check what viewer type was last used and load appropriate data
+        chrome.storage.local.get(['currentViewType'], (result) => {
+            if (result['currentViewType']) {
+                this.viewerType = result['currentViewType'];
+            }
         
-        // Load data based on current viewer type
-        if (this.viewerType === 'Disability') {
-            this.populateDisabilityTable();
-        } else if (this.viewerType === 'Claims') {
-            this.populateClaimsTable();
-        }
+            // Load data based on current viewer type
+            if (this.viewerType === 'Disability') {
+                this.populateDisabilityTable();
+            } else if (this.viewerType === 'Claims') {
+                this.populateClaimsTable();
+            }
         
-        this.cdr.detectChanges();
-    });
+            this.cdr.detectChanges();
+        });
         
         setInterval(() => {
             this.checkLoginStatus();
@@ -61,7 +80,17 @@ export class App implements OnInit, AfterViewInit {
     }
 
     private updateLastUpdated() {
-        this.lastUpdated = new Date().toLocaleString();
+        this.lastUpdated = '';
+
+        if (this.viewerType === 'Disability') {
+            chrome.storage.local.get(['disabilitiesUpdated'], (result) => {
+                this.lastUpdated = result['disabilitiesUpdated'] || new Date().toLocaleString();
+            });
+        } else if (this.viewerType === 'Claims') {
+            chrome.storage.local.get(['claimsUpdated'], (result) => {
+                this.lastUpdated = result['claimsUpdated'] || new Date().toLocaleString();
+            });
+        }
     }
 
     public navigateToVA(): void {
@@ -107,10 +136,7 @@ export class App implements OnInit, AfterViewInit {
         chrome.storage.local.get(['claims'], (result) => {
             if (result['claims']) {
                 const claims: ClaimModel[] = result['claims'];
-                // Render claims table here
                 this.renderClaimsTable(claims);
-                // This part is not implemented in the original code
-                console.log('Claims data:', claims);
             } else {
                 // If no data, show empty state
                 console.log('No claims data available.');
@@ -150,14 +176,26 @@ export class App implements OnInit, AfterViewInit {
         });
 
         this.initializeSorting();
+
+        // If no individual ratings, show empty state
+        if (disabilities.individualRatings.length === 0) {
+            disabilityRows.innerHTML = `
+                <tr>
+                    <td colspan="5" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
+                </tr>
+            `;
+        }
     }
 
     // Function to render the claims table with data
     private renderClaimsTable(claims: ClaimModel[]) {
         const claimsRows = document.getElementById('claimsRows');
+
         if (!claimsRows) return;
+
         // Clear existing rows
         claimsRows.innerHTML = '';
+
         // Add claims data
         claims.forEach((claim: ClaimModel) => {
             const row = document.createElement('tr');
@@ -170,6 +208,7 @@ export class App implements OnInit, AfterViewInit {
             `;
             claimsRows.appendChild(row);
         });
+
         // If no claims data, show empty state
         if (claims.length === 0) {
             claimsRows.innerHTML = `
@@ -186,7 +225,7 @@ export class App implements OnInit, AfterViewInit {
 
         disabilityRows.innerHTML = `
             <tr>
-                <td colspan="4" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
+                <td colspan="5" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
             </tr>
         `;
     }
@@ -256,8 +295,6 @@ export class App implements OnInit, AfterViewInit {
 
     // Initialize event listeners
     ngAfterViewInit() {
-        this.populateDisabilityTable();
-
         // Handle refresh button
         const refreshButton = document.getElementById('refreshButton');
         refreshButton?.addEventListener('click', () => {
@@ -290,7 +327,7 @@ export class App implements OnInit, AfterViewInit {
     // Add this method or update your existing clear data handler
     handleClearDataClick() {
         // Clear both disabilities and claims from storage
-        chrome.storage.local.remove(['disabilities', 'claims'], () => {
+        chrome.storage.local.remove(['disabilities', 'claims', 'disabilitiesUpdated', 'claimsUpdated'], () => {
             console.log('Cleared all data');
             
             // Clear both tables

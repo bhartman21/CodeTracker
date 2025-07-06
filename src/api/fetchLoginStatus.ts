@@ -3,27 +3,38 @@ const LOCATION_ENDPOINT = "https://api.va.gov/v0/profile/full_name";
 export default async function fetchLoginStatus(): Promise<LoginStatusModel> {
     try{
         const response = await fetch(LOCATION_ENDPOINT);
+        var loginStatus = new LoginStatusModel();
         
-        if(!response.ok) {
-            throw new Error(`HTTP ERROR! Status: ${response.status}`)
+        if (response.status === 200) {
+            const data = await response.json();
+
+            loginStatus = new LoginStatusModel({
+                isLoggedIn: true,
+                firstName: data.first,
+                middleName: data.middle,
+                lastName: data.last,
+                suffix: data.suffix,
+                fullName: data.first + ' ' + (data.middle ? data.middle + ' ' : '') + data.last + (data.suffix ? ', ' + data.suffix : '')
+            });
+            
+            //console.log('Login successful:', loginStatus?.fullName);
+            
+            // Store the login status in Chrome storage
+            chrome.storage.local.set({ loginStatus });
+        } else {
+            console.log(`HTTP ERROR! Status: ${response?.statusText}`);
+
+            loginStatus = new LoginStatusModel({
+                isLoggedIn: false,
+                firstName: '',
+                middleName: '',
+                lastName: '',
+                suffix: '',
+                fullName: ''
+            });
+
         }
 
-        const data = await response.json();
-
-        const loginStatus = new LoginStatusModel({
-            isLoggedIn: true,
-            firstName: data.first,
-            middleName: data.middle,
-            lastName: data.last,
-            suffix: data.suffix,
-            fullName: data.first + ' ' + (data.middle ? data.middle + ' ' : '') + data.last + (data.suffix ? ', ' + data.suffix : '')
-        });
-        
-        console.log('Login successful:', loginStatus.fullName);
-        
-        // Store the login status in Chrome storage
-        chrome.storage.local.set({ loginStatus });
-        
         return loginStatus;
     } catch (error) {
         console.error('Login check failed:', error);

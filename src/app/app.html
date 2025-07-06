@@ -8,7 +8,7 @@
                         <span class="ml-2 text-sm text-gray-700">Disability & Claims Edition</span>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <button id="clearDataButton" class="btn-secondary bg-red-500">Clear Data</button>
+                        <button id="clearDataButton" class="btn-secondary bg-red-500" [hidden]="true">Clear Data</button>
                         <button id="refreshButton" class="btn-secondary bg-green-500">Refresh Data</button>
                         <button (click)="navigateToVA()" class="btn-secondary bg-gray-500" [hidden]="isLoggedIn">Log into VA.gov</button>
                         <button (click)="navigateTipJar()" class="btn-primary">Tip the Dev</button>
