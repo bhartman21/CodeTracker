@@ -199,8 +199,13 @@ export class App implements OnInit, AfterViewInit {
         // Add claims data
         claims.forEach((claim: ClaimModel) => {
             const row = document.createElement('tr');
+            let claimIdContent = 'N/A';
+            if (claim.claimId) {
+                claimIdContent = `<a class="text-red-800" href="https://api.va.gov/v0/benefits_claims/${claim.claimId}" target="_blank">${claim.claimId}</a>`;
+            }
+
             row.innerHTML = `
-                <td>${claim.claimId || 'N/A'}</td>
+                <td>${claimIdContent}</td>
                 <td>${claim.claimType || 'N/A'}</td>
                 <td>${claim.claimTypeCode}</td>
                 <td>${claim.status}</td>
