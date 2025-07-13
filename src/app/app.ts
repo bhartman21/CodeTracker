@@ -15,10 +15,6 @@ import { ChromeService } from './Services/chrome.service';
 })
 export class App implements OnInit, AfterViewInit {
 
-    // Inside your component
-    @ViewChild('disabilityContainer') disabilityContainer!: ElementRef;
-    @ViewChild('disabilityRows') disabilityRows!: ElementRef;
-
     isLoggedIn: boolean = false;
     currentSort: any = { column: '', direction: 'asc' };
     viewerType: string = 'Disability';
@@ -31,25 +27,21 @@ export class App implements OnInit, AfterViewInit {
     constructor(
         private cdr: ChangeDetectorRef,
         private chromeService: ChromeService, 
-            private ngZone: NgZone
+        private ngZone: NgZone
     ) {
         this.checkLoginStatus();
     }
 
     private async checkLoginStatus() {
         try {
-            const result = await this.chromeService.getFromStorage(['loginStatus']);
-            if (result['loginStatus']) {
-                this.isLoggedIn = result['loginStatus'].isLoggedIn;
-            } else {
-                const status = await fetchLoginStatus();
-                this.isLoggedIn = status.isLoggedIn;
-                this.cdr.detectChanges();
-            }
+            // Always fetch the login status directly, do not use chrome.storage
+            const status = await fetchLoginStatus();
+            this.isLoggedIn = status.isLoggedIn;
+            this.cdr.detectChanges();
             console.log('Login status updated:', this.isLoggedIn);
         } catch (error) {
-            console.log('Error checking login status:', error);
             this.isLoggedIn = false;
+            console.log('Error checking login status:', error);
             this.cdr.detectChanges();
         }
     }
@@ -104,10 +96,7 @@ export class App implements OnInit, AfterViewInit {
             } else if (this.viewerType === 'Claims') {
                 this.populateClaimsTable();
             }
-            
-            // Set up event listeners
-            this.setupEventListeners();
-        });
+        }, 100);
     }
 
     public navigateToVA(): void {
@@ -139,8 +128,14 @@ export class App implements OnInit, AfterViewInit {
                     const disabilities: DisabilityModel = result['disabilities'] || [];
                     this.disabilityRatings = disabilities.individualRatings || [];
                     this.combinedRating = disabilities.combinedRating ? `${disabilities.combinedRating}%` : '---';
+
+                    this.chromeService.getFromStorage(['disabilitiesUpdated']).then((res) => {
+                        this.lastUpdated = res['disabilitiesUpdated'] || new Date().toLocaleString();
+                        this.cdr.detectChanges();
+                    });
                 } else {
                     this.showEmptyDisabilityTable();
+                        this.cdr.detectChanges();
                 }
             });
         });
@@ -153,8 +148,14 @@ export class App implements OnInit, AfterViewInit {
                 if (result['claims']) {
                     const claims: ClaimModel[] = result['claims'];
                     this.claims = claims ?? [];
+
+                    this.chromeService.getFromStorage(['claimsUpdated']).then((res) => {
+                        this.lastUpdated = res['claimsUpdated'] || new Date().toLocaleString();
+                        this.cdr.detectChanges();
+                    });
                 } else {
                     this.showEmptyClaimsTable();
+                        this.cdr.detectChanges();
                 }
             });
         });
@@ -162,14 +163,19 @@ export class App implements OnInit, AfterViewInit {
 
     handleRefreshClick() {
         if (this.viewerType === 'Disability') {
-            this.ngZone.run(() => {
-                fetchDisabilities();
+            this.ngZone.run(async () => {
+                await fetchDisabilities();
+                chrome.storage.local.set({ disabilitiesUpdated: new Date().toLocaleString() });
+                this.populateDisabilityTable();
             });
         } else if(this.viewerType === 'Claims') {
-            this.ngZone.run(() => {
-                fetchClaims();
+            this.ngZone.run(async () => {
+                await fetchClaims();
+                chrome.storage.local.set({ claimsUpdated: new Date().toLocaleString() });
+                this.populateClaimsTable();
             });
         }
+
         this.updateLastUpdated();
     }
 
@@ -189,17 +195,17 @@ export class App implements OnInit, AfterViewInit {
         });
     }
 
-    private setupEventListeners() {
-        const refreshButton = document.getElementById('refreshButton');
-        if (refreshButton) {
-            refreshButton.addEventListener('click', () => this.handleRefreshClick());
-        }
+    // private setupEventListeners() {
+    //     const refreshButton = document.getElementById('refreshButton');
+    //     if (refreshButton) {
+    //         refreshButton.addEventListener('click', () => this.handleRefreshClick());
+    //     }
 
-        const clearButton = document.getElementById('clearDataButton');
-        if (clearButton) {
-            clearButton.addEventListener('click', () => this.handleClearDataClick());
-        }
-    }
+    //     const clearButton = document.getElementById('clearDataButton');
+    //     if (clearButton) {
+    //         clearButton.addEventListener('click', () => this.handleClearDataClick());
+    //     }
+    // }
 
     // Add this method or update your existing clear data handler
     handleClearDataClick() {
@@ -318,5 +324,42 @@ export class App implements OnInit, AfterViewInit {
         sortedRows.forEach(row => tbody.appendChild(row));
     }
 //#endregion Disability Table Sorting
+
+    exportDisabilitiesToCSV() {
+        if (!this.disabilityRatings || this.disabilityRatings.length === 0) {
+            alert('No data to export.');
+            return;
+        }
+        const replacer = (key: string, value: any) => value === null ? '' : value;
+        const header = [
+            'Diagnostic Type Code',
+            'hyph_diagnostic_type_code',
+            'Decision',
+            'Diagnostic Text',
+            'Rating Percentage',
+            'static'
+        ];
+        const csv = [
+            header.join(','),
+            ...this.disabilityRatings.map(row => 
+                [
+                    JSON.stringify(row.diagnostic_type_code, replacer),
+                    JSON.stringify(row.hyph_diagnostic_type_code, replacer),
+                    JSON.stringify(row.decision, replacer),
+                    JSON.stringify(row.diagnostic_text, replacer),
+                    JSON.stringify(row.rating_percentage, replacer),
+                    JSON.stringify(row.static_ind, replacer)
+                ].join(',')
+            )
+        ].join('\r\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'disabilities.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
 
 }

@@ -1,7 +1,8 @@
 const LOCATION_ENDPOINT = "https://api.va.gov/v0/benefits_claims";
 
-export default function fetchClaims() {
-    fetch(LOCATION_ENDPOINT)
+export default function fetchClaims(): Promise<void> {
+    return new Promise((resolve, reject) => 
+        fetch(LOCATION_ENDPOINT)
         .then(response => response.json())
         .then(data => { 
             var claimsList: ClaimModel[] = [];
@@ -15,11 +16,14 @@ export default function fetchClaims() {
                 }));
             });
            
-            chrome.storage.local.set({ claims: claimsList, claimsUpdated: new Date().toLocaleString() });
+            chrome.storage.local.set({ claims: claimsList, claimsUpdated: new Date().toLocaleString() }, () => {
+                resolve(); // Only resolve after storage is updated
+            });
         })
-        .catch(error => {
-            console.log(error);
+        .catch(reject => {
+            console.log(reject);
         })
+    );
 }
 
 // Model for disability claims
