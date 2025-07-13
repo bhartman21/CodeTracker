@@ -1,9 +1,10 @@
-import { AfterViewInit, Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import fetchDisabilities, { DisabilityModel, IndividualRatingModel } from '../api/fetchDisabilities';
 import fetchLoginStatus, { LoginStatusModel } from '../api/fetchLoginStatus';
 import fetchClaims, { ClaimModel } from '../api/fetchClaims';
+import { ChromeService } from './Services/chrome.service';
 
 @Component({
   selector: 'app-root',
@@ -14,31 +15,33 @@ import fetchClaims, { ClaimModel } from '../api/fetchClaims';
 })
 export class App implements OnInit, AfterViewInit {
 
+    // Inside your component
+    @ViewChild('disabilityContainer') disabilityContainer!: ElementRef;
+    @ViewChild('disabilityRows') disabilityRows!: ElementRef;
+
     isLoggedIn: boolean = false;
     currentSort: any = { column: '', direction: 'asc' };
     viewerType: string = 'Disability';
     lastUpdated: string = '';
     
-    constructor(private cdr: ChangeDetectorRef) {
-        // Check if chrome APIs are available
-        if (typeof chrome !== 'undefined' && chrome.storage) {
-            // this.populateDisabilityTable();
-            // Check login status
-            this.checkLoginStatus();
-        }
+    combinedRating: string = '---';
+    disabilityRatings: IndividualRatingModel[] = [];
+    claims: ClaimModel[] = [];   
+
+    constructor(
+        private cdr: ChangeDetectorRef,
+        private chromeService: ChromeService, 
+            private ngZone: NgZone
+    ) {
+        this.checkLoginStatus();
     }
 
     private async checkLoginStatus() {
         try {
-            var makeAPIRequest = true;
-            chrome.storage.local.get(['loginStatus'], (result) => {
-                if (result['loginStatus']) {
-                    this.isLoggedIn = result['loginStatus'].isLoggedIn;
-                    makeAPIRequest = false;
-                }
-            });
-
-            if (makeAPIRequest) {
+            const result = await this.chromeService.getFromStorage(['loginStatus']);
+            if (result['loginStatus']) {
+                this.isLoggedIn = result['loginStatus'].isLoggedIn;
+            } else {
                 const status = await fetchLoginStatus();
                 this.isLoggedIn = status.isLoggedIn;
                 this.cdr.detectChanges();
@@ -49,34 +52,6 @@ export class App implements OnInit, AfterViewInit {
             this.isLoggedIn = false;
             this.cdr.detectChanges();
         }
-    }
-
-    ngOnInit(): void {
-        // Check if chrome APIs are available
-        if (typeof chrome === 'undefined' || !chrome.storage) {
-            console.error('Chrome extension APIs not available');
-            return;
-        }
-
-        // Check what viewer type was last used and load appropriate data
-        chrome.storage.local.get(['currentViewType'], (result) => {
-            if (result['currentViewType']) {
-                this.viewerType = result['currentViewType'];
-            }
-        
-            // Load data based on current viewer type
-            if (this.viewerType === 'Disability') {
-                this.populateDisabilityTable();
-            } else if (this.viewerType === 'Claims') {
-                this.populateClaimsTable();
-            }
-        
-            this.cdr.detectChanges();
-        });
-        
-        setInterval(() => {
-            this.checkLoginStatus();
-        }, 60000); // Check login status every 60 seconds
     }
 
     private updateLastUpdated() {
@@ -93,6 +68,48 @@ export class App implements OnInit, AfterViewInit {
         }
     }
 
+    private showEmptyDisabilityTable() {
+        this.disabilityRatings = [];
+    }
+
+    private showEmptyClaimsTable() {
+        this.claims = [];
+    }
+
+    async ngOnInit(): Promise<void> {
+        const result = await this.chromeService.getFromStorage(['currentViewType']);
+        if (result['currentViewType']) {
+            this.viewerType = result['currentViewType'];
+        }
+        
+        if (this.viewerType === 'Disability') {
+            this.populateDisabilityTable();
+        } else if (this.viewerType === 'Claims') {
+            this.populateClaimsTable();
+        }
+        
+        this.cdr.detectChanges();
+        
+        setInterval(() => {
+            this.checkLoginStatus();
+        }, 60000);
+    }
+
+    ngAfterViewInit() {
+        // Use setTimeout to avoid ExpressionChangedAfterItHasBeenCheckedError
+        setTimeout(() => {
+            // Initialize the tables based on current view type
+            if (this.viewerType === 'Disability') {
+                this.populateDisabilityTable();
+            } else if (this.viewerType === 'Claims') {
+                this.populateClaimsTable();
+            }
+            
+            // Set up event listeners
+            this.setupEventListeners();
+        });
+    }
+
     public navigateToVA(): void {
         window.open('https://www.va.gov/', 'VALogin');
     }
@@ -106,246 +123,97 @@ export class App implements OnInit, AfterViewInit {
         chrome.storage.local.set({ currentViewType: type });
 
         if (type === 'Disability') {
-            // this.handleDisabilityRefreshClick();
             this.populateDisabilityTable();
         } else if (type === 'Claims') {
-            // this.handleClaimRefreshClick();
             this.populateClaimsTable();
         }
 
         this.cdr.detectChanges();
-        // this.updateLastUpdated();
     }
 
-    // Function to populate the disability table
     populateDisabilityTable() {
         // Get data from Chrome storage
         chrome.storage.local.get(['disabilities'], (result) => {
-            if (result['disabilities']) {
-                const disabilities: DisabilityModel = result['disabilities'];
-                this.renderDisabilityTable(disabilities);
-            } else {
-                // If no data, show empty state
-                this.showEmptyDisabilityTable();
-            }
+            this.ngZone.run(() => {
+                if (result['disabilities']) {
+                    const disabilities: DisabilityModel = result['disabilities'] || [];
+                    this.disabilityRatings = disabilities.individualRatings || [];
+                    this.combinedRating = disabilities.combinedRating ? `${disabilities.combinedRating}%` : '---';
+                } else {
+                    this.showEmptyDisabilityTable();
+                }
+            });
         });
     }
 
     populateClaimsTable() {
         // Get data from Chrome storage
         chrome.storage.local.get(['claims'], (result) => {
-            if (result['claims']) {
-                const claims: ClaimModel[] = result['claims'];
-                this.renderClaimsTable(claims);
-            } else {
-                // If no data, show empty state
-                console.log('No claims data available.');
-            }
+            this.ngZone.run(() => {
+                if (result['claims']) {
+                    const claims: ClaimModel[] = result['claims'];
+                    this.claims = claims ?? [];
+                } else {
+                    this.showEmptyClaimsTable();
+                }
+            });
         });
     }                
 
-    // Function to render the disability table with data
-    private renderDisabilityTable(disabilities: DisabilityModel) {
-        const disabilityRows = document.getElementById('disabilityRows');
-        const combinedRatingDisplay = document.getElementById('combinedRatingDisplay');
-
-        if (!disabilityRows) return;
-
-        // Clear existing rows
-        disabilityRows.innerHTML = '';
-
-        // Display combined rating above table
-        if (combinedRatingDisplay) {
-            combinedRatingDisplay.innerHTML = `Total Combined Rating: ${disabilities.combinedRating}%`;
-        }
-
-        // Add individual ratings
-        disabilities.individualRatings.forEach((rating: any) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>
-                  ${rating.diagnostic_type_code || ''}
-                  ${rating.hyph_diagnostic_type_code ? ` [${rating.hyph_diagnostic_type_code}]` : ''}
-                </td>
-                <td>${rating.decision || 'N/A'}</td>
-                <td>${rating.diagnostic_text || 'N/A'}</td>
-                <td>${rating.rating_percentage || '0'}%</td>
-                <td>${rating.static_ind ? 'Yes' : 'No'}</td>
-            `;
-            disabilityRows.appendChild(row);
-        });
-
-        this.initializeSorting();
-
-        // If no individual ratings, show empty state
-        if (disabilities.individualRatings.length === 0) {
-            disabilityRows.innerHTML = `
-                <tr>
-                    <td colspan="5" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
-                </tr>
-            `;
-        }
-    }
-
-    // Function to render the claims table with data
-    private renderClaimsTable(claims: ClaimModel[]) {
-        const claimsRows = document.getElementById('claimsRows');
-
-        if (!claimsRows) return;
-
-        // Clear existing rows
-        claimsRows.innerHTML = '';
-
-        // Add claims data
-        claims.forEach((claim: ClaimModel) => {
-            const row = document.createElement('tr');
-            let claimIdContent = 'N/A';
-            if (claim.claimId) {
-                claimIdContent = `<a class="text-red-800" href="https://api.va.gov/v0/benefits_claims/${claim.claimId}" target="_blank">${claim.claimId}</a>`;
-            }
-
-            row.innerHTML = `
-                <td>${claimIdContent}</td>
-                <td>${claim.claimType || 'N/A'}</td>
-                <td>${claim.claimTypeCode}</td>
-                <td>${claim.status}</td>
-                <td>${claim.closeDate || 'N/A'}</td>
-            `;
-            claimsRows.appendChild(row);
-        });
-
-        // If no claims data, show empty state
-        if (claims.length === 0) {
-            claimsRows.innerHTML = `
-                <tr>
-                    <td colspan="5" class="has-text-centered">No claims data available. Click "Refresh Data" to load.</td>
-                </tr>
-            `;
-        }
-    }
-
-    private showEmptyDisabilityTable() {
-        const disabilityRows = document.getElementById('disabilityRows');
-        if (!disabilityRows) return;
-
-        disabilityRows.innerHTML = `
-            <tr>
-                <td colspan="5" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
-            </tr>
-        `;
-    }
-
-    private showEmptyClaimsTable() {
-        const claimsRows = document.getElementById('claimsRows');
-        if (!claimsRows) return;
-        claimsRows.innerHTML = `
-            <tr>
-                <td colspan="5" class="has-text-centered">No claims data available. Click "Refresh Data" to load.</td>
-            </tr>
-        `;
-    }
-
     handleRefreshClick() {
         if (this.viewerType === 'Disability') {
-            this.handleDisabilityRefreshClick();
+            this.ngZone.run(() => {
+                fetchDisabilities();
+            });
         } else if(this.viewerType === 'Claims') {
-            this.handleClaimRefreshClick();
+            this.ngZone.run(() => {
+                fetchClaims();
+            });
         }
+        this.updateLastUpdated();
     }
 
     // Function to handle refresh button click
-    handleClaimRefreshClick() {
-        // Show loading state
-        const claimsRows = document.getElementById('claimsRows');
-        if (claimsRows) {
-            claimsRows.innerHTML = `
-                <tr>
-                    <td colspan="5" class="has-text-centered">Loading claims...</td>
-                </tr>
-            `;
-        }
-
-        // Fetch new data
-        fetchClaims();
-        this.updateLastUpdated();
-
-        // Wait a moment for the data to be stored, then populate table
-        setTimeout(() => {
-            this.populateClaimsTable();
-        }, 500);
+    handleClaimRefresh() {
+        this.ngZone.run(() => {
+            // Fetch new data
+            fetchClaims();
+        });
     }
 
     // Function to handle refresh button click
-    handleDisabilityRefreshClick() {
-        // Show loading state
-        const disabilityRows = document.getElementById('disabilityRows');
-        if (disabilityRows) {
-            disabilityRows.innerHTML = `
-                <tr>
-                    <td colspan="4" class="has-text-centered">Loading disabilities...</td>
-                </tr>
-            `;
-        }
-
-        // Fetch new data
-        fetchDisabilities();
-        this.updateLastUpdated();
-
-        // Wait a moment for the data to be stored, then populate table
-        setTimeout(() => {
-            this.populateDisabilityTable();
-        }, 500);
+    handleDisabilityRefresh() {
+        this.ngZone.run(() => {
+            // Fetch new data
+            fetchDisabilities();
+        });
     }
 
-
-    // Initialize event listeners
-    ngAfterViewInit() {
-        // Handle refresh button
+    private setupEventListeners() {
         const refreshButton = document.getElementById('refreshButton');
-        refreshButton?.addEventListener('click', () => {
-            this.handleRefreshClick();
-        });
+        if (refreshButton) {
+            refreshButton.addEventListener('click', () => this.handleRefreshClick());
+        }
 
-
-        // Handle clear data button
         const clearButton = document.getElementById('clearDataButton');
-        clearButton?.addEventListener('click', () => {
-            this.handleClearDataClick();
-        });
-
-        // Listen for storage changes
-        chrome.storage.onChanged.addListener((changes, areaName) => {
-            if (areaName === 'local' && changes['disabilities']) {
-                const disabilityContainer = document.getElementById('disabilityContainer');
-                if (this.viewerType === 'Disability') {
-                    this.populateDisabilityTable();
-                }
-            }
-            if (areaName === 'local' && changes['claims']) {
-                if (this.viewerType === 'Claims') {
-                    this.populateClaimsTable();
-                }
-            }
-        });
+        if (clearButton) {
+            clearButton.addEventListener('click', () => this.handleClearDataClick());
+        }
     }
 
     // Add this method or update your existing clear data handler
     handleClearDataClick() {
-        // Clear both disabilities and claims from storage
-        chrome.storage.local.remove(['disabilities', 'claims', 'disabilitiesUpdated', 'claimsUpdated'], () => {
-            console.log('Cleared all data');
-            
-            // Clear both tables
-            this.showEmptyDisabilityTable();
-            this.showEmptyClaimsTable();
-            
-            // Hide combined rating display if visible
-            const combinedRatingDisplay = document.getElementById('combinedRatingDisplay');
-            if (combinedRatingDisplay) {
-                combinedRatingDisplay.style.display = 'none';
-            }
-        });
-    }      
+        this.chromeService.removeFromStorage(['disabilities', 'claims', 'disabilitiesUpdated', 'claimsUpdated'])
+            .then(() => {
+                console.log('Cleared all data');
+                
+                // Clear both tables
+                this.showEmptyDisabilityTable();
+                this.showEmptyClaimsTable();
+                this.combinedRating = '---';
+
+            });
+    }
 
 //#region Disability Table Sorting
 
@@ -405,7 +273,10 @@ export class App implements OnInit, AfterViewInit {
                     if (!isNaN(aNum) && !isNaN(bNum)) {
                         return direction === 'asc' ? aNum - bNum : bNum - aNum;
                     }
-                    break;
+                    // Add missing return for string comparison
+                    return direction === 'asc' 
+                        ? aValue.toString().localeCompare(bValue.toString())
+                        : bValue.toString().localeCompare(aValue.toString());
                 case 'status':
                     aValue = (a.cells[1].textContent?.trim() || '').toLowerCase();
                     bValue = (b.cells[1].textContent?.trim() || '').toLowerCase();
@@ -448,5 +319,4 @@ export class App implements OnInit, AfterViewInit {
     }
 //#endregion Disability Table Sorting
 
-/* this ends the table sorting javascript*/
 }

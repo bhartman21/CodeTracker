@@ -8,7 +8,7 @@
                         <span class="ml-2 text-sm text-gray-700">Disability & Claims Edition</span>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <button id="clearDataButton" class="btn-secondary bg-red-500" [hidden]="true">Clear Data</button>
+                        <button id="clearDataButton" class="btn-secondary bg-red-500">Clear Data</button>
                         <button id="refreshButton" class="btn-secondary bg-green-500">Refresh Data</button>
                         <button (click)="navigateToVA()" class="btn-secondary bg-gray-500" [hidden]="isLoggedIn">Log into VA.gov</button>
                         <button (click)="navigateTipJar()" class="btn-primary">Tip the Dev</button>
@@ -51,7 +51,7 @@
                         <div class="space-y-4">
                             <div class="flex justify-between items-center">
                                 <span class="text-lg text-gray-600">Combined Rating</span>
-                                <span class="text-xl text-gray-600" id="combinedRatingDisplay">--</span>
+                                <span class="text-xl text-gray-600" id="combinedRatingDisplay">{{ combinedRating }}</span>
                             </div>
                         </div>
 
@@ -65,8 +65,23 @@
                                 <th class="px-6 py-3 text-left">Static?</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white" id="disabilityRows">
-                            <!-- Dynamic content will be inserted here -->
+                        <tbody #disabilityRows class="divide-y divide-gray-200 bg-white">
+                            <tr *ngIf="disabilityRatings.length === 0">
+                                <td colspan="5" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
+                            </tr>
+                            <tr *ngFor="let disability of disabilityRatings">
+                                <td>
+                                {{ disability.diagnostic_type_code || '' }}
+                                <span *ngIf="disability.hyph_diagnostic_type_code">[{{ disability.hyph_diagnostic_type_code }}]</span>
+                                </td>
+                                <td>{{ disability.decision || 'N/A' }}</td>
+                                <td>{{ disability.diagnostic_text }}</td>
+                                <td>{{ disability.rating_percentage }}%</td>
+                                <td class="text-center">
+                                    <span *ngIf="disability.static_ind === 'true'" class="text-green-600 text-lg">✓</span>
+                                    <span *ngIf="disability.static_ind !== 'true'" class="text-gray-400 text-lg">□</span>
+                                </td>
+                            </tr>
                         </tbody>
                         </table>
                     </div>
@@ -74,18 +89,33 @@
                     <!-- Cliams Table Container -->
                     <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg" *ngIf="viewerType==='Claims'">
                         <table class="min-w-full divide-y divide-gray-300">
-                        <thead class="table-header">
-                            <tr>
-                                <th class="px-6 py-3 text-left">Claim ID</th>
-                                <th class="px-6 py-3 text-left">Claim Type</th>
-                                <th class="px-6 py-3 text-left">Claim Code</th>
-                                <th class="px-6 py-3 text-left">Status </th>
-                                <th class="px-6 py-3 text-left">Closed Date</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-200 bg-white" id="claimsRows">
-                            <!-- Dynamic content will be inserted here -->
-                        </tbody>
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">Claim ID</th>
+                                    <th class="px-6 py-3 text-left">Claim Type</th>
+                                    <th class="px-6 py-3 text-left">Claim Code</th>
+                                    <th class="px-6 py-3 text-left">Status </th>
+                                    <th class="px-6 py-3 text-left">Closed Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                <tr *ngIf="claims.length === 0">
+                                    <td colspan="5" class="has-text-centered">No claims data available. Click "Refresh Data" to load.</td>
+                                </tr>
+                                <tr *ngFor="let claim of claims">
+                                    <td>
+                                        <a *ngIf="claim.claimId" class="text-red-800" target="_blank"
+                                            [href]="'https://api.va.gov/v0/benefits_claims/' + claim.claimId">
+                                            {{ claim.claimId }}
+                                        </a>
+                                        <span *ngIf="!claim.claimId">N/A</span>
+                                    </td>
+                                    <td>{{ claim.claimType || 'N/A' }}</td>
+                                    <td>{{ claim.claimTypeCode || 'N/A' }}</td>
+                                    <td>{{ claim.status || 'N/A' }}</td>
+                                    <td>{{ claim.closeDate || 'N/A' }}</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
 
@@ -93,16 +123,16 @@
             </div>
 
             <!-- Sidebar -->
-            <div class="space-y-8" ngIf="0===1">
+            <div class="space-y-8" *ngIf="0!==0">
                 <!-- Login Status Card -->
                 <div class="card">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Login Status</h3>
-                <div class="flex items-center space-x-3">
-                    <div [class]="isLoggedIn ? 'bg-green-100' : 'bg-red-100'" class="w-3 h-3 rounded-full"></div>
-                    <span [class]="isLoggedIn ? 'text-green-800' : 'text-red-800'" class="text-sm font-medium">
-                    {{ isLoggedIn ? 'Connected' : 'Disconnected' }}
-                    </span>
-                </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Login Status</h3>
+                    <div class="flex items-center space-x-3">
+                        <div [class]="isLoggedIn ? 'bg-green-100' : 'bg-red-100'" class="w-3 h-3 rounded-full"></div>
+                            <span [class]="isLoggedIn ? 'text-green-800' : 'text-red-800'" class="text-sm font-medium">
+                            {{ isLoggedIn ? 'Connected' : 'Disconnected' }}
+                            </span>
+                    </div>
                 </div>
             </div>
             </div>

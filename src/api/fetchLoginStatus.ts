@@ -8,18 +8,20 @@ export default async function fetchLoginStatus(): Promise<LoginStatusModel> {
         if (response.status === 200) {
             const data = await response.json();
 
+            const first = data?.first ?? '';
+            const middle = data?.middle ?? '';
+            const last = data?.last ?? '';
+            const suffix = data?.suffix ?? '';
+
             loginStatus = new LoginStatusModel({
                 isLoggedIn: true,
-                firstName: data.first,
-                middleName: data.middle,
-                lastName: data.last,
-                suffix: data.suffix,
-                fullName: data.first + ' ' + (data.middle ? data.middle + ' ' : '') + data.last + (data.suffix ? ', ' + data.suffix : '')
+                firstName: first,
+                middleName: middle,
+                lastName: last,
+                suffix: suffix,
+                fullName: `${first}${middle ? ' ' + middle : ''} ${last}${suffix ? ', ' + suffix : ''}`
             });
-            
-            //console.log('Login successful:', loginStatus?.fullName);
-            
-            // Store the login status in Chrome storage
+
             chrome.storage.local.set({ loginStatus });
         } else {
             console.log(`HTTP ERROR! Status: ${response?.statusText}`);
