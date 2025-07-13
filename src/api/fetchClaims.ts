@@ -8,10 +8,10 @@ export default function fetchClaims() {
             data?.data?.forEach((claim: { id: string; type: string; attributes: any; }) => {
                 claimsList.push(new ClaimModel({
                     claimId: claim.id,
-                    claimType: claim.attributes.claimType,
-                    claimTypeCode: claim.attributes.claimTypeCode,
-                    closeDate: claim.attributes.closeDate,
-                    status: claim.attributes.status
+                    claimType: claim.attributes?.claimType ?? '',
+                    claimTypeCode: claim.attributes?.claimTypeCode ?? '',
+                    closeDate: claim.attributes?.closeDate ?? '',
+                    status: claim.attributes?.status ?? ''
                 }));
             });
            
