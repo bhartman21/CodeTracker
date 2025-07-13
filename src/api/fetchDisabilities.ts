@@ -1,8 +1,9 @@
 const LOCATION_ENDPOINT = 'https://api.va.gov/v0/rated_disabilities';
 
-export default function fetchDisabilities() {
+export default function fetchDisabilities(): Promise<void> {
     // Fetch disabilities from the VA API
-    fetch(LOCATION_ENDPOINT)
+    return new Promise((resolve, reject) => {
+        fetch(LOCATION_ENDPOINT)
         .then(response => response.json())
         .then(disability => {
             const attributes = disability?.data?.attributes;
@@ -21,11 +22,14 @@ export default function fetchDisabilities() {
             });
             disabilitiesList.individualRatings = disability.data.attributes.individual_ratings ?? [];
 
-            chrome.storage.local.set({ disabilities: disabilitiesList, disabilitiesUpdated: new Date().toLocaleString() });
+            chrome.storage.local.set({ disabilities: disabilitiesList, disabilitiesUpdated: new Date().toLocaleString() }, () => {
+                    resolve(); // Only resolve after storage is updated
+                });
         })
-        .catch(error => {
-            console.log(error);
-        })
+        .catch(reject => {
+            console.log(reject);
+        });
+    });
 }
 
 // Model for an individual rating

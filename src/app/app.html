@@ -8,8 +8,8 @@
                         <span class="ml-2 text-sm text-gray-700">Disability & Claims Edition</span>
                     </div>
                     <div class="flex items-center space-x-4">
-                        <button id="clearDataButton" class="btn-secondary bg-red-500">Clear Data</button>
-                        <button id="refreshButton" class="btn-secondary bg-green-500">Refresh Data</button>
+                        <button id="clearDataButton" class="btn-secondary bg-red-500" (click)="handleClearDataClick()">Clear Data</button>
+                        <button id="refreshButton" class="btn-secondary bg-green-500" (click)="handleRefreshClick()">Refresh Data</button>
                         <button (click)="navigateToVA()" class="btn-secondary bg-gray-500" [hidden]="isLoggedIn">Log into VA.gov</button>
                         <button (click)="navigateTipJar()" class="btn-primary">Tip the Dev</button>
                     </div>
@@ -56,33 +56,42 @@
                         </div>
 
                         <table class="min-w-full divide-y divide-gray-300">
-                        <thead class="table-header">
-                            <tr>
-                                <th class="px-3 py-3 text-left">Diag. Code</th>
-                                <th class="px-6 py-3 text-left">Status</th>
-                                <th class="px-6 py-3 text-left">Condition</th>
-                                <th class="px-6 py-3 text-left">Rating</th>
-                                <th class="px-6 py-3 text-left">Static?</th>
-                            </tr>
-                        </thead>
-                        <tbody #disabilityRows class="divide-y divide-gray-200 bg-white">
-                            <tr *ngIf="disabilityRatings.length === 0">
-                                <td colspan="5" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
-                            </tr>
-                            <tr *ngFor="let disability of disabilityRatings">
-                                <td>
-                                {{ disability.diagnostic_type_code || '' }}
-                                <span *ngIf="disability.hyph_diagnostic_type_code">[{{ disability.hyph_diagnostic_type_code }}]</span>
-                                </td>
-                                <td>{{ disability.decision || 'N/A' }}</td>
-                                <td>{{ disability.diagnostic_text }}</td>
-                                <td>{{ disability.rating_percentage }}%</td>
-                                <td class="text-center">
-                                    <span *ngIf="disability.static_ind === 'true'" class="text-green-600 text-lg">✓</span>
-                                    <span *ngIf="disability.static_ind !== 'true'" class="text-gray-400 text-lg">□</span>
-                                </td>
-                            </tr>
-                        </tbody>
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="px-3 py-3 text-left">Diag. Code</th>
+                                    <th class="px-6 py-3 text-left">Status</th>
+                                    <th class="px-6 py-3 text-left">Condition</th>
+                                    <th class="px-6 py-3 text-left">Rating</th>
+                                    <th class="px-6 py-3 text-left">Static?</th>
+                                </tr>
+                            </thead>
+                            <tbody #disabilityRows class="divide-y divide-gray-200 bg-white">
+                                <tr *ngIf="disabilityRatings.length === 0">
+                                    <td colspan="5" class="has-text-centered">No disability data available. Click "Refresh Data" to load.</td>
+                                </tr>
+                                <tr *ngFor="let disability of disabilityRatings; let i = index" [ngClass]="[i % 2 === 0 ? 'bg-white' : 'bg-gray-300', 'hover:bg-blue-200']">
+                                    <td>
+                                        {{ disability.diagnostic_type_code || '' }}
+                                        <span *ngIf="disability.hyph_diagnostic_type_code">[{{ disability.hyph_diagnostic_type_code }}]</span>
+                                    </td>
+                                    <td>{{ disability.decision || 'N/A' }}</td>
+                                    <td>{{ disability.diagnostic_text }}</td>
+                                    <td>{{ disability.rating_percentage }}%</td>
+                                    <td class="text-center">
+                                        <input *ngIf="disability.static_ind" type="checkbox" class="form-checkbox h-3 w-3 ring-green-600 ring-2" [checked]="disability.static_ind" disabled>
+                                        <input *ngIf="!disability.static_ind" type="checkbox" class="form-checkbox h-3 w-3 ring-red-600 ring-2" [checked]="disability.static_ind" disabled>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" class="px-3 py-2 text-right">
+                                        <button (click)="exportDisabilitiesToCSV()" class="btn-secondary bg-blue-500 text-white px-3 py-1 rounded">
+                                            Export to CSV
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 
@@ -102,7 +111,7 @@
                                 <tr *ngIf="claims.length === 0">
                                     <td colspan="5" class="has-text-centered">No claims data available. Click "Refresh Data" to load.</td>
                                 </tr>
-                                <tr *ngFor="let claim of claims">
+                                <tr *ngFor="let claim of claims; let i = index" [ngClass]="[i % 2 === 0 ? 'bg-white' : 'bg-gray-300', 'hover:bg-blue-200']">
                                     <td>
                                         <a *ngIf="claim.claimId" class="text-red-800" target="_blank"
                                             [href]="'https://api.va.gov/v0/benefits_claims/' + claim.claimId">
