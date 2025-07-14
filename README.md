@@ -13,7 +13,7 @@ No more digging through pages — just the facts you need, when you need them.
 
 - ✅ Service-connected conditions
 - ✅ Current rating percentages
-- ✅ VA diagnostic codes
+- ✅ Diagnostic Codes of Claimed Disabilities 
 - ✅ Static vs non-static status
 
 It simplifies your VA disability data into a clear, readable format — all from your browser.
