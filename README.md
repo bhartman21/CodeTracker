@@ -13,8 +13,10 @@ No more digging through pages — just the facts you need, when you need them.
 
 - ✅ Service-connected conditions
 - ✅ Current rating percentages
-- ✅ Diagnostic Codes of Claimed Disabilities 
+- ✅ Diagnostic Codes of claimed disabilities 
 - ✅ Static vs non-static status
+- ✅ List of claims filed
+- ✅ Links to all claims JSON data
 
 It simplifies your VA disability data into a clear, readable format — all from your browser.
 
@@ -25,7 +27,6 @@ It simplifies your VA disability data into a clear, readable format — all from
 - [Angular](https://angular.io/)
 - TypeScript
 - Chrome Extension APIs
-- A mission-first mindset 🇺🇸
 
 ---
 
