@@ -17,11 +17,7 @@
         "type": "module"
     }, 
     "permissions": [
-        "storage",
-        "activeTab",
-        "webRequest", 
-        "webNavigation", 
-        "identity"
+        "storage"
     ],
     "host_permissions": [
         "https://api.va.gov/*",
