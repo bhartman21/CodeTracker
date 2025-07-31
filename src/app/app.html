@@ -28,6 +28,12 @@
                     <button [class]="viewerType === 'Claims' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
                     class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200"
                     (click)="switchViewer('Claims')">Claims Status</button>
+                    <button [class]="viewerType === 'Appeals' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200"
+                    (click)="switchViewer('Appeals')">Appeals Status</button>
+                    <button [class]="viewerType === 'Letters' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                    class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm transition-colors duration-200"
+                    (click)="switchViewer('Letters')">Letters</button>
                 </nav>
             </div>
 
@@ -38,7 +44,7 @@
                 <div class="card">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-lg font-semibold text-gray-900">
-                        {{ viewerType === 'Disability' ? 'Disability Ratings' : 'Claims Status' }}
+                        {{ viewerType === 'Disability' ? 'Disability Ratings' : viewerType + ' Status' }}
                         </h2>
                         <div class="flex items-center space-x-2">
                         <span class="text-sm text-gray-500">Last updated:</span>
@@ -128,6 +134,76 @@
                         </table>
                     </div>
 
+                    <!-- Appeals Table Container -->
+                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg" *ngIf="viewerType==='Appeals'">
+                        <table class="min-w-full divide-y divide-gray-300">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="px-3 py-3 text-left">Appeal ID</th>
+                                    <th class="px-3 py-3 text-left">Issues</th>
+                                    <th class="px-3 py-3 text-left">Type</th>
+                                    <th class="px-3 py-3 text-left">Status</th>
+                                    <th class="px-3 py-3 text-left">Program</th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                <tr *ngIf="appeals.length === 0">
+                                    <td colspan="5" class="has-text-centered">No appeals found.</td>
+                                </tr>
+
+                                <!-- Main Appeal Row -->
+                                <tr *ngFor="let appeal of appeals" class="bg-gray-50">
+                                    <td class="px-3 py-2 font-medium">{{ appeal.id }}</td>
+                                    <td class="px-3 py-2 font-medium">
+                                        <!-- need to open an Appeal Issues List in a Modal -->
+                                        <button class="text-blue-600 hover:underline" (click)="showIssues(appeal)">
+                                            {{ appeal.issues.length }} Issue{{ appeal.issues.length !== 1 ? 's' : '' }}
+                                        </button>
+                                    </td>
+                                    <td class="px-3 py-2">{{ appeal.type }}</td>
+                                    <td class="px-3 py-2">
+                                        {{ appeal.status.type || 'Unknown' }}
+                                    </td>
+                                    <td class="px-3 py-2">{{ appeal.programArea }}</td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div> 
+
+                    <!-- Claims Letter Table Container -->
+                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg" *ngIf="viewerType==='Letters'">
+                        <table class="min-w-full divide-y divide-gray-300">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="px-3 py-3 text-left">Document ID</th>
+                                    <th class="px-3 py-3 text-left">Source</th>
+                                    <th class="px-3 py-3 text-left">Uploaded</th>
+                                    <th class="px-3 py-3 text-left">Type</th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-gray-200 bg-white">
+                                <tr *ngIf="letters.length === 0">
+                                    <td colspan="5" class="has-text-centered">No claim letters available.</td>
+                                </tr>
+
+                                <!-- Each Claim Letter -->
+                                <tr *ngFor="let letter of letters">
+                                    <td class="px-3 py-2 font-medium" alt="Downnload Letter">
+                                        <a [href]="'https://api.va.gov/v0/claim_letters/' + letter.document_id" target="_blank" class="text-blue-600 hover:underline">
+                                            Download Letter
+                                        </a>
+                                    </td>
+                                    <td class="px-3 py-2">{{ letter.source }}</td>
+                                    <td class="px-3 py-2">{{ letter.upload_date }}</td>
+                                    <td class="px-3 py-2">{{ letter.type_description || 'N/A' }}</td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -144,10 +220,8 @@
                     </div>
                 </div>
             </div>
-            </div>
-
+        </div>
         </main>
-
     </div>
 
 <router-outlet />
