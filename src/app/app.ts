@@ -5,6 +5,8 @@ import fetchDisabilities, { DisabilityModel, IndividualRatingModel } from '../ap
 import fetchLoginStatus, { LoginStatusModel } from '../api/fetchLoginStatus';
 import fetchClaims, { ClaimModel } from '../api/fetchClaims';
 import { ChromeService } from './Services/chrome.service';
+import fetchAppeals, { AppealModel, AppealIssue } from '../api/fetchAppeals';
+import fetchLetters, { ClaimLetterModel } from '../api/fetchLetters';
 
 @Component({
   selector: 'app-root',
@@ -23,6 +25,10 @@ export class App implements OnInit, AfterViewInit {
     combinedRating: string = '---';
     disabilityRatings: IndividualRatingModel[] = [];
     claims: ClaimModel[] = [];   
+    appeals: AppealModel[] = [];
+    letters: ClaimLetterModel[] = [];
+
+    @ViewChild('issuesModal') issuesModal!: ElementRef;
 
     constructor(
         private cdr: ChangeDetectorRef,
@@ -57,6 +63,14 @@ export class App implements OnInit, AfterViewInit {
             chrome.storage.local.get(['claimsUpdated'], (result) => {
                 this.lastUpdated = result['claimsUpdated'] || new Date().toLocaleString();
             });
+        } else if (this.viewerType === 'Appeals') {
+            chrome.storage.local.get(['appealsUpdated'], (result) => {
+                this.lastUpdated = result['appealsUpdated'] || new Date().toLocaleString();
+            });
+        } else if (this.viewerType === 'Letters') {
+            chrome.storage.local.get(['lettersUpdated'], (result) => {
+                this.lastUpdated = result['lettersUpdated'] || new Date().toLocaleString();
+            });
         }
     }
 
@@ -66,6 +80,14 @@ export class App implements OnInit, AfterViewInit {
 
     private showEmptyClaimsTable() {
         this.claims = [];
+    }
+
+    private showEmptyAppealsTable() {
+        this.appeals = [];
+    }
+
+    private showEmptyLettersTable() {
+        this.letters = [];
     }
 
     async ngOnInit(): Promise<void> {
@@ -78,6 +100,10 @@ export class App implements OnInit, AfterViewInit {
             this.populateDisabilityTable();
         } else if (this.viewerType === 'Claims') {
             this.populateClaimsTable();
+        } else if (this.viewerType === 'Appeals') {
+            this.populateAppealsTable();
+        } else if (this.viewerType === 'Letters') {
+            this.populateLettersTable();
         }
         
         this.cdr.detectChanges();
@@ -95,6 +121,10 @@ export class App implements OnInit, AfterViewInit {
                 this.populateDisabilityTable();
             } else if (this.viewerType === 'Claims') {
                 this.populateClaimsTable();
+            } else if (this.viewerType === 'Appeals') {
+                this.populateAppealsTable();
+            } else if (this.viewerType === 'Letters') {
+                this.populateLettersTable();
             }
         }, 100);
     }
@@ -159,7 +189,48 @@ export class App implements OnInit, AfterViewInit {
                 }
             });
         });
-    }                
+    }
+
+    populateAppealsTable() {
+        // Get data from Chrome storage
+        chrome.storage.local.get(['appeals'], (result) => {
+            this.ngZone.run(() => {
+                if (result['appeals']) {
+                    const appeals: AppealModel[] = result['appeals'];
+                    this.appeals = appeals ?? [];
+
+                    this.chromeService.getFromStorage(['appealsUpdated']).then((res) => {
+                        this.lastUpdated = res['appealsUpdated'] || new Date().toLocaleString();
+                        this.cdr.detectChanges();
+                    });
+                } else {
+                    this.showEmptyAppealsTable();
+                        this.cdr.detectChanges();
+                }
+            });
+        });
+    }
+
+    populateLettersTable() {
+        // Get data from Chrome storage
+        chrome.storage.local.get(['letters'], (result) => {
+            this.ngZone.run(() => {
+                if (result['letters']) {
+                    const letters: ClaimLetterModel[] = result['letters'];
+                    this.letters = letters ?? [];
+
+                    this.chromeService.getFromStorage(['lettersUpdated']).then((res) => {
+                        this.lastUpdated = res['lettersUpdated'] || new Date().toLocaleString();
+                        this.cdr.detectChanges();
+                    });
+                } else {
+                    this.showEmptyLettersTable();
+                        this.cdr.detectChanges();
+                }
+            });
+        });
+        console.log('Letters populated:', this.letters);
+    }    
 
     handleRefreshClick() {
         if (this.viewerType === 'Disability') {
@@ -173,6 +244,18 @@ export class App implements OnInit, AfterViewInit {
                 await fetchClaims();
                 chrome.storage.local.set({ claimsUpdated: new Date().toLocaleString() });
                 this.populateClaimsTable();
+            });
+        } else if (this.viewerType === 'Appeals') {
+            this.ngZone.run(async () => {
+                await fetchAppeals();
+                chrome.storage.local.set({ appealsUpdated: new Date().toLocaleString() });
+                this.populateAppealsTable();
+            });
+        } else if (this.viewerType === 'Letters') {
+            this.ngZone.run(async () => {
+                await fetchLetters();
+                chrome.storage.local.set({ lettersUpdated: new Date().toLocaleString() });
+                this.populateLettersTable();
             });
         }
 
@@ -195,30 +278,53 @@ export class App implements OnInit, AfterViewInit {
         });
     }
 
-    // private setupEventListeners() {
-    //     const refreshButton = document.getElementById('refreshButton');
-    //     if (refreshButton) {
-    //         refreshButton.addEventListener('click', () => this.handleRefreshClick());
-    //     }
+    handleAppealRefresh() {
+        this.ngZone.run(() => { 
+            // Fetch new data
+            fetchAppeals();
+        });
+    }
 
-    //     const clearButton = document.getElementById('clearDataButton');
-    //     if (clearButton) {
-    //         clearButton.addEventListener('click', () => this.handleClearDataClick());
-    //     }
-    // }
+    handleLetterRefresh() {
+        this.ngZone.run(() => { 
+            // Fetch new data
+            fetchLetters();
+        });
+    }
 
     // Add this method or update your existing clear data handler
     handleClearDataClick() {
-        this.chromeService.removeFromStorage(['disabilities', 'claims', 'disabilitiesUpdated', 'claimsUpdated'])
+        this.chromeService.removeFromStorage(['disabilities', 'claims', 'appeals', 'letters', 'disabilitiesUpdated', 'claimsUpdated', 'appealsUpdated', 'lettersUpdated'])
             .then(() => {
                 console.log('Cleared all data');
                 
                 // Clear both tables
                 this.showEmptyDisabilityTable();
                 this.showEmptyClaimsTable();
+                this.showEmptyAppealsTable();
+                this.showEmptyLettersTable();
                 this.combinedRating = '---';
 
             });
+    }
+
+    // Function to open issues in a modal or dialog for the selected appeal
+    showIssues(appeal: AppealModel) {
+        // Check if appeal has issues
+        if (!appeal.issues || appeal.issues.length === 0) {
+            alert('No issues available for this appeal.');
+            return;
+        }
+
+        // Open a modal or display the issues in a dialog
+        const issuesText = appeal.issues.map((issue: AppealIssue) => 
+            `Description: ${issue.description}\n` +
+            `Diagnostic Code: ${issue.diagnosticCode || 'N/A'}\n` +
+            `Last Action: ${issue.lastAction || 'N/A'}\n` +
+            `Date: ${issue.date || 'N/A'}\n`
+        ).join('\n');
+
+        alert(`Appeal Issues:\n\n${issuesText}`);
     }
 
 //#region Disability Table Sorting

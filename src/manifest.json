@@ -2,7 +2,7 @@
     "manifest_version": 3, 
     "name": "CodeTracker: Disability Edition", 
     "description": "Displays VA disability rating information in a browser extension including the diagnostic codes.", 
-    "version": "1.0", 
+    "version": "2.0", 
     "action": {
         "default_popup": "index.html"
     },
