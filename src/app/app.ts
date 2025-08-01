@@ -134,7 +134,7 @@ export class App implements OnInit, AfterViewInit {
     }
 
     public navigateTipJar(): void {
-        window.open('https://tiptopjar.com/bhartman21', '_tipJar');
+        window.open('https://www.buymeacoffee.com/bhartman21', '_blank');
     }
 
     public switchViewer(type: string): void {
