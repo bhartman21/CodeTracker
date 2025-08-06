@@ -11,12 +11,15 @@ No more digging through pages — just the facts you need, when you need them.
 
 **CodeTracker – Disability Edition** pulls and displays your:
 
-- ✅ Service-connected conditions
-- ✅ Current rating percentages
-- ✅ Diagnostic Codes of claimed disabilities 
-- ✅ Static vs non-static status
-- ✅ List of claims filed
-- ✅ Links to all claims JSON data
+- ✅ View your combined VA disability rating
+- ✅ See your full list of service-connected conditions
+- ✅ Obtain your Diagnostic Codes used to rate the disabilities
+- ✅ Monitor claim progress and decision dates
+- ✅ View a list of any appeals you've filed
+- ✅ View and Download your decision letters (and others)
+- ✅ Refresh your data instantly
+- ✅ 100% client-side, no data tracking
+
 
 It simplifies your VA disability data into a clear, readable format — all from your browser.
 
