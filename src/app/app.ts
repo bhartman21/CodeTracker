@@ -22,33 +22,61 @@ export class App implements OnInit, AfterViewInit {
     viewerType: string = 'Disability';
     lastUpdated: string = '';
     
+    // Add data persistence setting
+    persistDataOnClose: boolean = true;
+    
+    // Add loading state for auto-refresh
+    isRefreshingData: boolean = false;
+      // Add notification dismissal state
+    isLoginNotificationDismissed: boolean = false;
+    
     combinedRating: string = '---';
     disabilityRatings: IndividualRatingModel[] = [];
     claims: ClaimModel[] = [];   
     appeals: AppealModel[] = [];
     letters: ClaimLetterModel[] = [];
 
-    @ViewChild('issuesModal') issuesModal!: ElementRef;
-
-    constructor(
+    @ViewChild('issuesModal') issuesModal!: ElementRef;    constructor(
         private cdr: ChangeDetectorRef,
         private chromeService: ChromeService, 
         private ngZone: NgZone
     ) {
-        this.checkLoginStatus();
-    }
-
-    private async checkLoginStatus() {
+        // Don't call checkLoginStatus here - it will be called in ngOnInit
+    }    private async checkLoginStatus() {
         try {
             // Always fetch the login status directly, do not use chrome.storage
             const status = await fetchLoginStatus();
+            const previousLoginStatus = this.isLoggedIn;
             this.isLoggedIn = status.isLoggedIn;
-            this.cdr.detectChanges();
-            console.log('Login status updated:', this.isLoggedIn);
+            
+            // Force change detection if login status changed
+            if (previousLoginStatus !== this.isLoggedIn) {
+                console.log('Login status changed from', previousLoginStatus, 'to', this.isLoggedIn);
+                
+                // Reset notification dismissal state when user logs in
+                if (this.isLoggedIn && !previousLoginStatus) {
+                    console.log('User logged in - resetting notification dismissal state');
+                    this.isLoginNotificationDismissed = false;
+                    chrome.storage.session.remove(['loginNotificationDismissed']);
+                }
+                
+                // Use NgZone to ensure change detection runs
+                this.ngZone.run(() => {
+                    this.cdr.detectChanges();
+                });
+            }
+            
         } catch (error) {
-            this.isLoggedIn = false;
             console.log('Error checking login status:', error);
-            this.cdr.detectChanges();
+            const previousLoginStatus = this.isLoggedIn;
+            this.isLoggedIn = false;
+            
+            // Force change detection if status changed
+            if (previousLoginStatus !== this.isLoggedIn) {
+                this.ngZone.run(() => {
+                    this.cdr.detectChanges();
+                });
+            }
         }
     }
 
@@ -88,45 +116,74 @@ export class App implements OnInit, AfterViewInit {
 
     private showEmptyLettersTable() {
         this.letters = [];
-    }
-
-    async ngOnInit(): Promise<void> {
-        const result = await this.chromeService.getFromStorage(['currentViewType']);
+    }    async ngOnInit(): Promise<void> {
+        // First, check login status
+        await this.checkLoginStatus();
+        
+        const result = await this.chromeService.getFromStorage(['currentViewType', 'persistDataOnClose']);
         if (result['currentViewType']) {
             this.viewerType = result['currentViewType'];
         }
         
-        if (this.viewerType === 'Disability') {
-            this.populateDisabilityTable();
-        } else if (this.viewerType === 'Claims') {
-            this.populateClaimsTable();
-        } else if (this.viewerType === 'Appeals') {
-            this.populateAppealsTable();
-        } else if (this.viewerType === 'Letters') {
-            this.populateLettersTable();
+        // Load data persistence setting
+        this.persistDataOnClose = result['persistDataOnClose'] !== false; // Default to true
+        
+        // Check if data should be cleared (user logged out + persistence disabled)
+        if (!this.isLoggedIn && !this.persistDataOnClose) {
+            console.log('User logged out with persistence disabled - clearing data');
+            await this.clearAllStoredData();
         }
         
+        // Load notification dismissal state from session storage
+        chrome.storage.session.get(['loginNotificationDismissed'], (sessionResult) => {
+            // If user is logged in, don't show the notification regardless of dismissal state
+            if (this.isLoggedIn) {
+                this.isLoginNotificationDismissed = true; // Hide notification when logged in
+                chrome.storage.session.remove(['loginNotificationDismissed']); // Clear stale state
+            } else {
+                this.isLoginNotificationDismissed = sessionResult['loginNotificationDismissed'] || false;
+            }
+            
+            console.log('Login notification state loaded:', {
+                isLoggedIn: this.isLoggedIn,
+                isLoginNotificationDismissed: this.isLoginNotificationDismissed,
+                shouldShowNotification: !this.isLoggedIn && !this.isLoginNotificationDismissed,
+                sessionStorage: sessionResult
+            });
+            
+            // Force change detection inside the callback
+            this.ngZone.run(() => {
+                this.cdr.detectChanges();
+            });
+        });
+        
+        // Load initial data from cache (fresh data will be loaded in ngAfterViewInit)
+        this.populateTableFromCache(this.viewerType);
+        
+        // Final change detection
         this.cdr.detectChanges();
         
         setInterval(() => {
             this.checkLoginStatus();
         }, 60000);
-    }
-
-    ngAfterViewInit() {
+    }    ngAfterViewInit() {
         // Use setTimeout to avoid ExpressionChangedAfterItHasBeenCheckedError
-        setTimeout(() => {
-            // Initialize the tables based on current view type
-            if (this.viewerType === 'Disability') {
-                this.populateDisabilityTable();
-            } else if (this.viewerType === 'Claims') {
-                this.populateClaimsTable();
-            } else if (this.viewerType === 'Appeals') {
-                this.populateAppealsTable();
-            } else if (this.viewerType === 'Letters') {
-                this.populateLettersTable();
+        setTimeout(async () => {
+            // Ensure login status is checked before deciding what to do
+            await this.checkLoginStatus();
+            
+            // Auto-refresh data on initial load if logged in, otherwise load from cache
+            if (this.isLoggedIn) {
+                console.log('User is logged in - refreshing data for current tab');
+                this.refreshDataForCurrentTab();
+            } else {
+                console.log('User is not logged in - loading from cache');
+                this.populateTableFromCache(this.viewerType);
             }
         }, 100);
+        
+        // Make debug method available globally for testing
+        (window as any).appComponent = this;
     }
 
     public navigateToVA(): void {
@@ -137,17 +194,142 @@ export class App implements OnInit, AfterViewInit {
         window.open('https://www.buymeacoffee.com/bhartman21', '_blank');
     }
 
-    public switchViewer(type: string): void {
+    public async switchViewer(type: string): Promise<void> {
         this.viewerType = type;
         chrome.storage.local.set({ currentViewType: type });
 
+        // Check login status and then refresh data accordingly
+        await this.checkLoginStatus();
+        
+        console.log('Switch viewer - Login status:', this.isLoggedIn, 'Type:', type);
+        
+        // Auto-refresh data when switching tabs if logged in
+        if (this.isLoggedIn) {
+            console.log('User is logged in, refreshing data...');
+            this.refreshDataForCurrentTab();
+        } else {
+            console.log('User is not logged in, loading from cache...');
+            // Just populate from cache if not logged in
+            this.populateTableFromCache(type);
+        }        this.cdr.detectChanges();
+    }
+
+    // Helper method to populate table from cache only
+    private populateTableFromCache(type: string): void {
+        console.log('Populating table from cache for type:', type);
+        
         if (type === 'Disability') {
             this.populateDisabilityTable();
         } else if (type === 'Claims') {
             this.populateClaimsTable();
+        } else if (type === 'Appeals') {
+            this.populateAppealsTable();
+        } else if (type === 'Letters') {
+            this.populateLettersTable();
         }
+    }
 
-        this.cdr.detectChanges();
+    // Method to refresh data for current tab
+    private refreshDataForCurrentTab(): void {
+        console.log('Refreshing data for current tab:', this.viewerType);
+        this.isRefreshingData = true;
+        this.cdr.detectChanges(); // Force UI update to show loading indicator
+
+        if (this.viewerType === 'Disability') {
+            this.fetchAndPopulateDisabilityTable();
+        } else if (this.viewerType === 'Claims') {
+            this.fetchAndPopulateClaimsTable();
+        } else if (this.viewerType === 'Appeals') {
+            this.fetchAndPopulateAppealsTable();
+        } else if (this.viewerType === 'Letters') {
+            this.fetchAndPopulateLettersTable();
+        }
+    }
+
+    // Fetch methods with loading state management
+    private async fetchAndPopulateDisabilityTable(): Promise<void> {
+        try {
+            await fetchDisabilities();
+            chrome.storage.local.set({ disabilitiesUpdated: new Date().toLocaleString() });
+            this.populateDisabilityTable();
+        } catch (error) {
+            console.error('Error fetching disabilities:', error);
+        } finally {
+            this.isRefreshingData = false;
+            this.cdr.detectChanges();
+        }
+    }
+
+    private async fetchAndPopulateClaimsTable(): Promise<void> {
+        try {
+            await fetchClaims();
+            chrome.storage.local.set({ claimsUpdated: new Date().toLocaleString() });
+            this.populateClaimsTable();
+        } catch (error) {
+            console.error('Error fetching claims:', error);
+        } finally {
+            this.isRefreshingData = false;
+            this.cdr.detectChanges();
+        }
+    }
+
+    private async fetchAndPopulateAppealsTable(): Promise<void> {
+        try {
+            await fetchAppeals();
+            chrome.storage.local.set({ appealsUpdated: new Date().toLocaleString() });
+            this.populateAppealsTable();
+        } catch (error) {
+            console.error('Error fetching appeals:', error);
+        } finally {
+            this.isRefreshingData = false;
+            this.cdr.detectChanges();
+        }
+    }
+
+    private async fetchAndPopulateLettersTable(): Promise<void> {
+        try {
+            await fetchLetters();
+            chrome.storage.local.set({ lettersUpdated: new Date().toLocaleString() });
+            this.populateLettersTable();
+        } catch (error) {
+            console.error('Error fetching letters:', error);
+        } finally {
+            this.isRefreshingData = false;
+            this.cdr.detectChanges();
+        }
+    }
+
+    // Method to clear all stored data
+    private async clearAllStoredData(): Promise<void> {
+        return new Promise<void>((resolve) => {
+            const keysToRemove = [
+                'disabilityRatings', 'disabilitiesUpdated', 'combinedRating',
+                'claims', 'claimsUpdated', 
+                'appeals', 'appealsUpdated',
+                'letters', 'lettersUpdated'
+            ];
+            
+            chrome.storage.local.remove(keysToRemove, () => {
+                console.log('Cleared all VA data from storage');
+                resolve();
+            });
+        });
+    }
+
+    // Data persistence methods
+    toggleDataPersistence(): void {
+        this.persistDataOnClose = !this.persistDataOnClose;
+        chrome.storage.local.set({ persistDataOnClose: this.persistDataOnClose });
+        console.log('Data persistence toggled:', this.persistDataOnClose);
+    }    dismissLoginNotification() {
+        this.isLoginNotificationDismissed = true;
+        // Store the dismissal state so it persists during the session
+        chrome.storage.session.set({ loginNotificationDismissed: true });
+        console.log('Login notification dismissed:', {
+            isLoggedIn: this.isLoggedIn,
+            isLoginNotificationDismissed: this.isLoginNotificationDismissed,        shouldShowNotification: !this.isLoggedIn && !this.isLoginNotificationDismissed
+        });
+        this.cdr.detectChanges(); // Force UI update
     }
 
     populateDisabilityTable() {
@@ -229,83 +411,27 @@ export class App implements OnInit, AfterViewInit {
                 }
             });
         });
-        console.log('Letters populated:', this.letters);
-    }    
+        console.log('Letters populated:', this.letters);    }    
 
-    handleRefreshClick() {
-        if (this.viewerType === 'Disability') {
-            this.ngZone.run(async () => {
-                await fetchDisabilities();
-                chrome.storage.local.set({ disabilitiesUpdated: new Date().toLocaleString() });
-                this.populateDisabilityTable();
-            });
-        } else if(this.viewerType === 'Claims') {
-            this.ngZone.run(async () => {
-                await fetchClaims();
-                chrome.storage.local.set({ claimsUpdated: new Date().toLocaleString() });
-                this.populateClaimsTable();
-            });
-        } else if (this.viewerType === 'Appeals') {
-            this.ngZone.run(async () => {
-                await fetchAppeals();
-                chrome.storage.local.set({ appealsUpdated: new Date().toLocaleString() });
-                this.populateAppealsTable();
-            });
-        } else if (this.viewerType === 'Letters') {
-            this.ngZone.run(async () => {
-                await fetchLetters();
-                chrome.storage.local.set({ lettersUpdated: new Date().toLocaleString() });
-                this.populateLettersTable();
-            });
-        }
+    // New method for handling refresh button click
+    handleRefreshClick(): void {
+        console.log('Refresh button clicked');
+        this.refreshDataForCurrentTab();    }
 
-        this.updateLastUpdated();
-    }
-
-    // Function to handle refresh button click
-    handleClaimRefresh() {
-        this.ngZone.run(() => {
-            // Fetch new data
-            fetchClaims();
-        });
-    }
-
-    // Function to handle refresh button click
-    handleDisabilityRefresh() {
-        this.ngZone.run(() => {
-            // Fetch new data
-            fetchDisabilities();
-        });
-    }
-
-    handleAppealRefresh() {
-        this.ngZone.run(() => { 
-            // Fetch new data
-            fetchAppeals();
-        });
-    }
-
-    handleLetterRefresh() {
-        this.ngZone.run(() => { 
-            // Fetch new data
-            fetchLetters();
-        });
-    }
-
-    // Add this method or update your existing clear data handler
-    handleClearDataClick() {
-        this.chromeService.removeFromStorage(['disabilities', 'claims', 'appeals', 'letters', 'disabilitiesUpdated', 'claimsUpdated', 'appealsUpdated', 'lettersUpdated'])
-            .then(() => {
-                console.log('Cleared all data');
-                
-                // Clear both tables
-                this.showEmptyDisabilityTable();
-                this.showEmptyClaimsTable();
-                this.showEmptyAppealsTable();
-                this.showEmptyLettersTable();
-                this.combinedRating = '---';
-
-            });
+    // Enhanced clear data method
+    async handleClearDataClick(): Promise<void> {
+        console.log('Clear data button clicked');
+        await this.clearAllStoredData();
+        
+        // Clear all displayed data
+        this.disabilityRatings = [];
+        this.claims = [];
+        this.appeals = [];
+        this.letters = [];
+        this.combinedRating = '---';
+        this.lastUpdated = '';
+        
+        this.cdr.detectChanges();
     }
 
     // Function to open issues in a modal or dialog for the selected appeal

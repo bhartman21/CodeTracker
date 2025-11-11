@@ -15,7 +15,16 @@ export default function fetchClaims(): Promise<void> {
                     status: claim.attributes?.status ?? ''
                 }));
             });
-           
+
+            claimsList.sort((a, b) => {
+                // Sort by closeDate, with nulls first
+                if (a.closeDate === null && b.closeDate === null) return 0;
+                if (a.closeDate === null) return -1;
+                if (b.closeDate === null) return 1;
+                return new Date(b.closeDate).getTime() - new Date(a.closeDate).getTime();
+                
+            });
+
             chrome.storage.local.set({ claims: claimsList, claimsUpdated: new Date().toLocaleString() }, () => {
                 resolve(); // Only resolve after storage is updated
             });
