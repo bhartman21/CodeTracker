@@ -353,3 +353,22 @@ body, html {
   border-radius: 0 0.5rem 0.5rem 0.5rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
+
+/* Disabled button styling */
+#refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+#refreshButton:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  background-color: #9ca3af !important; /* Keep gray background on hover when disabled */
+}
+
+/* Additional styling for login-required state */
+#refreshButton.cursor-not-allowed {
+  pointer-events: none;
+}

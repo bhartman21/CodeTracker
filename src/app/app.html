@@ -18,17 +18,26 @@
                             <span class="toggle-slider"></span>
                         </label>                        
                     </div>
-                      
-                    <!-- Stacked Data Management Buttons -->
+                        <!-- Stacked Data Management Buttons -->
                     <div class="flex flex-col space-y-1">
-                        <button id="refreshButton" class="btn-secondary bg-green-500 flex items-center justify-center space-x-1 text-xs px-3 py-1.5 min-w-[120px]" (click)="handleRefreshClick()" [disabled]="isRefreshingData">
+                        <button id="refreshButton" 
+                                class="btn-secondary flex items-center justify-center space-x-1 text-xs px-3 py-1.5 min-w-[120px]" 
+                                [class.bg-green-500]="isLoggedIn && !isRefreshingData"
+                                [class.bg-gray-400]="!isLoggedIn"
+                                [class.cursor-not-allowed]="!isLoggedIn"
+                                (click)="handleRefreshClick()" 
+                                [disabled]="isRefreshingData || !isLoggedIn"
+                                [title]="!isLoggedIn ? 'Please log into VA.gov to refresh data' : 'Refresh data from VA.gov'">
                             <svg *ngIf="isRefreshingData" class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span>{{ isRefreshingData ? 'Refreshing...' : 'Refresh Data' }}</span>
+                            <svg *ngIf="!isLoggedIn && !isRefreshingData" class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <span>{{ isRefreshingData ? 'Refreshing...' : (!isLoggedIn ? 'Login Required' : 'Refresh Data') }}</span>
                         </button>
-                        <button id="clearDataButton" class="btn-secondary bg-red-500 text-xs px-3 py-1.5 min-w-[80px]" (click)="handleClearDataClick()" [disabled]="isRefreshingData">Clear Data</button>                    </div>
+                        <button id="clearDataButton" class="btn-secondary bg-red-500 text-xs px-3 py-1.5 min-w-[80px]" (click)="handleClearDataClick()" [disabled]="isRefreshingData">Clear Data</button></div>
                       <button (click)="navigateTipJar()" class="flex items-center justify-center px-3 py-1.5 min-w-[120px] rounded">
                         <img src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=🍪&slug=bhartman21&button_colour=0000cc&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" style="height: 28px; width: auto;" />
                     </button>

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnInit, ChangeDetectorRef, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { AfterViewInit, Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import fetchDisabilities, { DisabilityModel, IndividualRatingModel } from '../api/fetchDisabilities';
@@ -15,7 +15,7 @@ import fetchLetters, { ClaimLetterModel } from '../api/fetchLetters';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit, AfterViewInit {
+export class App implements OnInit, AfterViewInit, OnDestroy {
 
     isLoggedIn: boolean = false;
     currentSort: any = { column: '', direction: 'asc' };
@@ -36,7 +36,11 @@ export class App implements OnInit, AfterViewInit {
     appeals: AppealModel[] = [];
     letters: ClaimLetterModel[] = [];
 
-    @ViewChild('issuesModal') issuesModal!: ElementRef;    constructor(
+    // Add cleanup tracking
+    private loginCheckInterval?: number;
+    private initializationTimeout?: number;
+
+    @ViewChild('issuesModal') issuesModal!: ElementRef;constructor(
         private cdr: ChangeDetectorRef,
         private chromeService: ChromeService, 
         private ngZone: NgZone
@@ -57,7 +61,11 @@ export class App implements OnInit, AfterViewInit {
                 if (this.isLoggedIn && !previousLoginStatus) {
                     console.log('User logged in - resetting notification dismissal state');
                     this.isLoginNotificationDismissed = false;
-                    chrome.storage.session.remove(['loginNotificationDismissed']);
+                    try {
+                        chrome.storage.session.remove(['loginNotificationDismissed']);
+                    } catch (storageError) {
+                        console.warn('Error clearing notification dismissal state:', storageError);
+                    }
                 }
                 
                 // Use NgZone to ensure change detection runs
@@ -157,33 +165,59 @@ export class App implements OnInit, AfterViewInit {
             });
         });
         
-        // Load initial data from cache (fresh data will be loaded in ngAfterViewInit)
-        this.populateTableFromCache(this.viewerType);
+        // Load initial data from cache (fresh data will be loaded in ngAfterViewInit)        this.populateTableFromCache(this.viewerType);
         
         // Final change detection
         this.cdr.detectChanges();
         
-        setInterval(() => {
+        // Store interval ID for cleanup
+        this.loginCheckInterval = window.setInterval(() => {
             this.checkLoginStatus();
         }, 60000);
     }    ngAfterViewInit() {
         // Use setTimeout to avoid ExpressionChangedAfterItHasBeenCheckedError
-        setTimeout(async () => {
-            // Ensure login status is checked before deciding what to do
-            await this.checkLoginStatus();
-            
-            // Auto-refresh data on initial load if logged in, otherwise load from cache
-            if (this.isLoggedIn) {
-                console.log('User is logged in - refreshing data for current tab');
-                this.refreshDataForCurrentTab();
-            } else {
-                console.log('User is not logged in - loading from cache');
+        this.initializationTimeout = window.setTimeout(async () => {
+            try {
+                // Ensure login status is checked before deciding what to do
+                await this.checkLoginStatus();
+                
+                // Auto-refresh data on initial load if logged in, otherwise load from cache
+                if (this.isLoggedIn) {
+                    console.log('User is logged in - refreshing data for current tab');
+                    this.refreshDataForCurrentTab();
+                } else {
+                    console.log('User is not logged in - loading from cache');
+                    this.populateTableFromCache(this.viewerType);
+                }
+            } catch (error) {
+                console.error('Error during initialization:', error);
+                // Fallback to loading from cache
                 this.populateTableFromCache(this.viewerType);
             }
         }, 100);
         
         // Make debug method available globally for testing
         (window as any).appComponent = this;
+    }
+
+    ngOnDestroy() {
+        // Clean up intervals and timeouts
+        if (this.loginCheckInterval) {
+            clearInterval(this.loginCheckInterval);
+            this.loginCheckInterval = undefined;
+        }
+        
+        if (this.initializationTimeout) {
+            clearTimeout(this.initializationTimeout);
+            this.initializationTimeout = undefined;
+        }
+        
+        // Clean up global reference
+        if ((window as any).appComponent === this) {
+            delete (window as any).appComponent;
+        }
+        
+        console.log('App component destroyed - cleanup completed');
     }
 
     public navigateToVA(): void {
@@ -409,14 +443,34 @@ export class App implements OnInit, AfterViewInit {
                     this.showEmptyLettersTable();
                         this.cdr.detectChanges();
                 }
-            });
-        });
-        console.log('Letters populated:', this.letters);    }    
+            });        });
+        console.log('Letters populated:', this.letters);
+    }
 
     // New method for handling refresh button click
     handleRefreshClick(): void {
         console.log('Refresh button clicked');
-        this.refreshDataForCurrentTab();    }
+        
+        // Check if user is logged in before allowing refresh
+        if (!this.isLoggedIn) {
+            console.log('Cannot refresh: User is not logged in');
+            // Could add a toast notification here in the future
+            return;
+        }
+        
+        // Prevent multiple simultaneous refresh operations
+        if (this.isRefreshingData) {
+            console.log('Refresh already in progress, ignoring click');
+            return;
+        }
+        
+        try {
+            this.refreshDataForCurrentTab();
+        } catch (error) {
+            console.error('Error during refresh operation:', error);
+            this.isRefreshingData = false; // Reset loading state on error
+        }
+    }
 
     // Enhanced clear data method
     async handleClearDataClick(): Promise<void> {
