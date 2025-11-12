@@ -24,11 +24,8 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     
     // Add data persistence setting
     persistDataOnClose: boolean = true;
-    
-    // Add loading state for auto-refresh
+      // Add loading state for auto-refresh
     isRefreshingData: boolean = false;
-      // Add notification dismissal state
-    isLoginNotificationDismissed: boolean = false;
     
     combinedRating: string = '---';
     disabilityRatings: IndividualRatingModel[] = [];
@@ -52,21 +49,9 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
             const status = await fetchLoginStatus();
             const previousLoginStatus = this.isLoggedIn;
             this.isLoggedIn = status.isLoggedIn;
-            
-            // Force change detection if login status changed
+              // Force change detection if login status changed
             if (previousLoginStatus !== this.isLoggedIn) {
                 console.log('Login status changed from', previousLoginStatus, 'to', this.isLoggedIn);
-                
-                // Reset notification dismissal state when user logs in
-                if (this.isLoggedIn && !previousLoginStatus) {
-                    console.log('User logged in - resetting notification dismissal state');
-                    this.isLoginNotificationDismissed = false;
-                    try {
-                        chrome.storage.session.remove(['loginNotificationDismissed']);
-                    } catch (storageError) {
-                        console.warn('Error clearing notification dismissal state:', storageError);
-                    }
-                }
                 
                 // Use NgZone to ensure change detection runs
                 this.ngZone.run(() => {
@@ -135,37 +120,13 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         
         // Load data persistence setting
         this.persistDataOnClose = result['persistDataOnClose'] !== false; // Default to true
-        
-        // Check if data should be cleared (user logged out + persistence disabled)
+          // Check if data should be cleared (user logged out + persistence disabled)
         if (!this.isLoggedIn && !this.persistDataOnClose) {
             console.log('User logged out with persistence disabled - clearing data');
             await this.clearAllStoredData();
         }
         
-        // Load notification dismissal state from session storage
-        chrome.storage.session.get(['loginNotificationDismissed'], (sessionResult) => {
-            // If user is logged in, don't show the notification regardless of dismissal state
-            if (this.isLoggedIn) {
-                this.isLoginNotificationDismissed = true; // Hide notification when logged in
-                chrome.storage.session.remove(['loginNotificationDismissed']); // Clear stale state
-            } else {
-                this.isLoginNotificationDismissed = sessionResult['loginNotificationDismissed'] || false;
-            }
-            
-            console.log('Login notification state loaded:', {
-                isLoggedIn: this.isLoggedIn,
-                isLoginNotificationDismissed: this.isLoginNotificationDismissed,
-                shouldShowNotification: !this.isLoggedIn && !this.isLoginNotificationDismissed,
-                sessionStorage: sessionResult
-            });
-            
-            // Force change detection inside the callback
-            this.ngZone.run(() => {
-                this.cdr.detectChanges();
-            });
-        });
-        
-        // Load initial data from cache (fresh data will be loaded in ngAfterViewInit)        this.populateTableFromCache(this.viewerType);
+        // Load initial data from cache (fresh data will be loaded in ngAfterViewInit)this.populateTableFromCache(this.viewerType);
         
         // Final change detection
         this.cdr.detectChanges();
@@ -353,20 +314,13 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
     // Data persistence methods
     toggleDataPersistence(): void {
         this.persistDataOnClose = !this.persistDataOnClose;
-        chrome.storage.local.set({ persistDataOnClose: this.persistDataOnClose });
-        console.log('Data persistence toggled:', this.persistDataOnClose);
-    }    dismissLoginNotification() {
-        this.isLoginNotificationDismissed = true;
-        // Store the dismissal state so it persists during the session
-        chrome.storage.session.set({ loginNotificationDismissed: true });
-        console.log('Login notification dismissed:', {
-            isLoggedIn: this.isLoggedIn,
-            isLoginNotificationDismissed: this.isLoginNotificationDismissed,        shouldShowNotification: !this.isLoggedIn && !this.isLoginNotificationDismissed
-        });
-        this.cdr.detectChanges(); // Force UI update
+        chrome.storage.local.set({ persistDataOnClose: this.persistDataOnClose });        console.log('Data persistence toggled:', this.persistDataOnClose);
     }
 
     populateDisabilityTable() {
+        // Reset sort state when loading new data
+        this.resetSortState();
+        
         // Get data from Chrome storage
         chrome.storage.local.get(['disabilities'], (result) => {
             this.ngZone.run(() => {
@@ -385,9 +339,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
                 }
             });
         });
-    }
-
-    populateClaimsTable() {
+    }    populateClaimsTable() {
+        // Reset sort state when loading new data
+        this.resetSortState();
+        
         // Get data from Chrome storage
         chrome.storage.local.get(['claims'], (result) => {
             this.ngZone.run(() => {
@@ -405,9 +360,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
                 }
             });
         });
-    }
-
-    populateAppealsTable() {
+    }    populateAppealsTable() {
+        // Reset sort state when loading new data
+        this.resetSortState();
+        
         // Get data from Chrome storage
         chrome.storage.local.get(['appeals'], (result) => {
             this.ngZone.run(() => {
@@ -425,9 +381,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
                 }
             });
         });
-    }
-
-    populateLettersTable() {
+    }    populateLettersTable() {
+        // Reset sort state when loading new data
+        this.resetSortState();
+        
         // Get data from Chrome storage
         chrome.storage.local.get(['letters'], (result) => {
             this.ngZone.run(() => {
@@ -507,9 +464,70 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
         alert(`Appeal Issues:\n\n${issuesText}`);
     }
 
-//#region Disability Table Sorting
+//#region Disability Table Sorting    // Modern Angular-based sorting functionality for disability table
+    sortTable(column: string): void {
+        // Toggle sort direction if clicking on the same column
+        if (this.currentSort.column === column) {
+            this.currentSort.direction = this.currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.currentSort.column = column;
+            this.currentSort.direction = 'asc';
+        }
 
-    // Sorting functionality for disability table
+        // Sort the disability ratings array
+        this.disabilityRatings.sort((a, b) => {
+            switch(column) {
+                case 'diagnosticCode':
+                    const aCode = a.diagnostic_type_code || '';
+                    const bCode = b.diagnostic_type_code || '';
+                    // Convert to numbers if possible
+                    const aNum = parseInt(aCode.toString());
+                    const bNum = parseInt(bCode.toString());
+                    if (!isNaN(aNum) && !isNaN(bNum)) {
+                        return this.currentSort.direction === 'asc' ? aNum - bNum : bNum - aNum;
+                    }
+                    // String comparison fallback
+                    return this.currentSort.direction === 'asc' 
+                        ? aCode.toString().localeCompare(bCode.toString())
+                        : bCode.toString().localeCompare(aCode.toString());
+                        
+                case 'status':
+                    const aStatus = (a.decision || '').toLowerCase();
+                    const bStatus = (b.decision || '').toLowerCase();
+                    return this.currentSort.direction === 'asc' 
+                        ? aStatus.localeCompare(bStatus)
+                        : bStatus.localeCompare(aStatus);
+                    
+                case 'condition':
+                    const aCondition = (a.diagnostic_text || '').toLowerCase();
+                    const bCondition = (b.diagnostic_text || '').toLowerCase();
+                    return this.currentSort.direction === 'asc' 
+                        ? aCondition.localeCompare(bCondition)
+                        : bCondition.localeCompare(aCondition);                      case 'rating':
+                    const aRating = parseInt(a.rating_percentage || '0') || 0;
+                    const bRating = parseInt(b.rating_percentage || '0') || 0;
+                    return this.currentSort.direction === 'asc' ? aRating - bRating : bRating - aRating;
+                    
+                default:
+                    const aDefault = (a.diagnostic_type_code || '').toLowerCase();
+                    const bDefault = (b.diagnostic_type_code || '').toLowerCase();
+                    return this.currentSort.direction === 'asc' 
+                        ? aDefault.localeCompare(bDefault)
+                        : bDefault.localeCompare(aDefault);
+            }
+        });
+
+        // Trigger change detection to update the view
+        this.cdr.detectChanges();
+    }
+
+    // Reset sort state to default (unsorted)
+    resetSortState(): void {
+        this.currentSort = { column: '', direction: 'asc' };
+        this.cdr.detectChanges();
+    }
+
+    // Legacy DOM-based sorting - keeping for reference but not used
     private initializeSorting(): void {
         const sortableHeaders = document.querySelectorAll('#disabilityContainer .sortable');
         
@@ -579,7 +597,7 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
                     break;
                 case 'rating':
                     aValue = a.cells[3].textContent?.trim() || '';
-                    bValue = b.cells[3].textContent?.trim() || '';
+                    bValue = a.cells[3].textContent?.trim() || '';
                     // Extract numbers from rating (e.g., "30%" -> 30)
                     const aRating = parseInt(aValue.toString().replace('%', '')) || 0;
                     const bRating = parseInt(bValue.toString().replace('%', '')) || 0;

@@ -11,16 +11,16 @@ export default function fetchDisabilities(): Promise<void> {
             if (!attributes) {
                 console.log('There are no attributes in disability response:', disability);
                 return;
-            }
-
-            // filter the data to include only the necessary fields
+            }            // filter the data to include only the necessary fields
             var disabilitiesList = new DisabilityModel({
                 combined_disability_rating: disability.data.attributes.combined_disability_rating ?? 0,
                 combined_effective_date: disability.data.attributes.combined_effective_date ?? null,
                 legal_effective_date: disability.data.attributes.legal_effective_date ?? null,
                 individual_ratings: []
             });
-            disabilitiesList.individualRatings = disability.data.attributes.individual_ratings ?? [];
+              // Map raw API data through IndividualRatingModel constructor to apply defaults
+            const rawRatings = disability.data.attributes.individual_ratings ?? [];
+            disabilitiesList.individualRatings = rawRatings.map((rating: any) => new IndividualRatingModel(rating));
 
             chrome.storage.local.set({ disabilities: disabilitiesList, disabilitiesUpdated: new Date().toLocaleString() }, () => {
                     resolve(); // Only resolve after storage is updated
@@ -53,7 +53,7 @@ export class IndividualRatingModel {
         disability_rating_id = null,
         effective_date = new Date(),
         rating_end_date  = new Date(),
-        rating_percentage = null,
+        rating_percentage = '0',
         static_ind = null, 
         hyph_diagnostic_type_code = null
     }) {
@@ -65,7 +65,7 @@ export class IndividualRatingModel {
         this.disability_rating_id = disability_rating_id;
         this.effective_date = effective_date;
         this.rating_end_date = rating_end_date;
-        this.rating_percentage = rating_percentage;
+        this.rating_percentage = rating_percentage ?? '0';
         this.static_ind = static_ind;
     }
 }
