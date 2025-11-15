@@ -1,27 +1,26 @@
-# Veteran CodeTracker – Disability Edition
+# VA Benefits Dashboard
 
-A Chrome extension built for U.S. veterans to easily retrieve and decode their VA disability information directly from [VA.gov](https://www.va.gov/).  
-No more digging through pages — just the facts you need, when you need them.
+A comprehensive Chrome extension built for U.S. veterans to easily access and manage their complete VA benefits information directly from [VA.gov](https://www.va.gov/).  
+Your complete benefits dashboard — all the facts you need, when you need them.
 
-> ⚠️ **Note:** You must be logged into [VA.gov](https://www.va.gov/) to retrieve the most up-to-date information. CodeTracker reads directly from your data in real time while ensuring your data stays private.
+> ⚠️ **Note:** You must be logged into [VA.gov](https://www.va.gov/) to retrieve the most up-to-date information. VA Benefits Dashboard reads directly from your data in real time while ensuring your data stays private.
 
 ---
 
 ## 🔍 What It Does
 
-**CodeTracker – Disability Edition** pulls and displays your:
+**VA Benefits Dashboard** provides a complete overview of your VA benefits:
 
-- ✅ View your combined VA disability rating
-- ✅ See your full list of service-connected conditions
-- ✅ Obtain your Diagnostic Codes used to rate the disabilities
-- ✅ Monitor claim progress and decision dates
-- ✅ View a list of any appeals you've filed
-- ✅ View and Download your decision letters (and others)
-- ✅ Refresh your data instantly
-- ✅ 100% client-side, no data tracking
+- ✅ **Disability Ratings** - View your combined rating and all service-connected conditions
+- ✅ **Diagnostic Codes** - Access the codes used to rate your disabilities  
+- ✅ **Claims Tracking** - Monitor claim progress and decision dates
+- ✅ **Appeals Management** - View and track any appeals you've filed
+- ✅ **Document Access** - View and download your decision letters and other documents
+- ✅ **Auto-Refresh** - Automatically updates data when switching between sections
+- ✅ **Data Control** - Choose whether to persist data and clear it instantly when needed
+- ✅ **100% Private** - Client-side only, no data tracking or external servers
 
-
-It simplifies your VA disability data into a clear, readable format — all from your browser.
+It consolidates all your VA benefits data into a clean, organized dashboard — all from your browser.
 
 ---
 

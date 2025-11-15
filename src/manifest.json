@@ -1,8 +1,7 @@
-{
-    "manifest_version": 3, 
-    "name": "CodeTracker: Disability Edition", 
-    "description": "Displays VA disability rating information in a browser extension including the diagnostic codes.", 
-    "version": "2.0", 
+{    "manifest_version": 3,
+    "name": "VA Benefits Dashboard", 
+    "description": "Enhanced dashboard with VA disability ratings, claims, appeals, and letters with automatic refresh and better data management.", 
+    "version": "3.0",
     "action": {
         "default_popup": "index.html"
     },

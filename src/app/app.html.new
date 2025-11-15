@@ -18,49 +18,55 @@
                             <span class="toggle-slider"></span>
                         </label>                        
                     </div>
-                        <!-- Stacked Data Management Buttons -->
+                      
+                    <!-- Stacked Data Management Buttons -->
                     <div class="flex flex-col space-y-1">
-                        <button id="refreshButton" 
-                                class="btn-secondary flex items-center justify-center space-x-1 text-xs px-3 py-1.5 min-w-[120px]" 
-                                [class.bg-green-500]="isLoggedIn && !isRefreshingData"
-                                [class.bg-gray-400]="!isLoggedIn"
-                                [class.cursor-not-allowed]="!isLoggedIn"
-                                (click)="handleRefreshClick()" 
-                                [disabled]="isRefreshingData || !isLoggedIn"
-                                [title]="!isLoggedIn ? 'Please log into VA.gov to refresh data' : 'Refresh data from VA.gov'">
+                        <button id="refreshButton" class="btn-secondary bg-green-500 flex items-center justify-center space-x-1 text-xs px-3 py-1.5 min-w-[120px]" (click)="handleRefreshClick()" [disabled]="isRefreshingData">
                             <svg *ngIf="isRefreshingData" class="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <svg *ngIf="!isLoggedIn && !isRefreshingData" class="h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                            <span>{{ isRefreshingData ? 'Refreshing...' : (!isLoggedIn ? 'Login Required' : 'Refresh Data') }}</span>
+                            <span>{{ isRefreshingData ? 'Refreshing...' : 'Refresh Data' }}</span>
                         </button>
-                        <button id="clearDataButton" class="btn-secondary bg-red-500 text-xs px-3 py-1.5 min-w-[80px]" (click)="handleClearDataClick()" [disabled]="isRefreshingData">Clear Data</button></div>
-                      <button (click)="navigateTipJar()" class="flex items-center justify-center px-3 py-1.5 min-w-[120px] rounded">
+                        <button id="clearDataButton" class="btn-secondary bg-red-500 text-xs px-3 py-1.5 min-w-[80px]" (click)="handleClearDataClick()" [disabled]="isRefreshingData">Clear Data</button>
+                    </div>
+                    
+                    <button (click)="navigateTipJar()" class="flex items-center justify-center px-3 py-1.5 min-w-[120px] rounded">
                         <img src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=🍪&slug=bhartman21&button_colour=0000cc&font_colour=ffffff&font_family=Lato&outline_colour=000000&coffee_colour=FFDD00" style="height: 28px; width: auto;" />
                     </button>
                 </div>
             </div>            
         </div>
-    </header>    <!-- Login Notification Banner -->
-    <div *ngIf="!isLoggedIn" 
+    </header>
+
+    <!-- Login Notification Banner -->
+    <div *ngIf="!isLoggedIn && !isLoginNotificationDismissed" 
          class="bg-amber-50 border-l-4 border-amber-400 p-4 mx-4 mt-4 rounded-r-md shadow-sm">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-amber-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-amber-800">
+                        <strong>Login Required:</strong> Please log into 
+                        <button (click)="navigateToVA()" class="font-semibold text-amber-900 underline hover:text-amber-700 transition-colors">
+                            VA.gov
+                        </button>
+                        to access fresh data. Showing cached information only.
+                    </p>
+                </div>
             </div>
-            <div class="ml-3">
-                <p class="text-sm text-amber-800">
-                    <strong>Login Required:</strong> Please log into 
-                    <button (click)="navigateToVA()" class="font-semibold text-amber-900 underline hover:text-amber-700 transition-colors">
-                        VA.gov
-                    </button>
-                    to access fresh data. Showing cached information only.
-                </p>
+            <div class="flex-shrink-0">
+                <button (click)="dismissLoginNotification()" 
+                        class="inline-flex rounded-md bg-amber-50 p-1.5 text-amber-500 hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2 focus:ring-offset-amber-50 transition-colors">
+                    <span class="sr-only">Dismiss</span>
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                </button>
             </div>
         </div>
     </div>
@@ -181,78 +187,16 @@
                                     </svg>
                                     <span class="loading-text">Refreshing disability ratings...</span>
                                 </div>
-                            </div>                            <table class="min-w-full divide-y divide-gray-300 relative">                                <thead class="table-header">
+                            </div>
+
+                            <table class="min-w-full divide-y divide-gray-300 relative">
+                                <thead class="table-header">
                                     <tr>
-                                        <th class="px-3 py-3 text-left sortable cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap" 
-                                            data-sort="diagnosticCode"
-                                            [class.sort-asc]="currentSort.column === 'diagnosticCode' && currentSort.direction === 'asc'"
-                                            [class.sort-desc]="currentSort.column === 'diagnosticCode' && currentSort.direction === 'desc'"
-                                            (click)="sortTable('diagnosticCode')"
-                                            title="Click to sort by Diagnostic Code">
-                                            <div class="flex items-center justify-between min-w-0">
-                                                <span class="truncate">DC</span>                                                <span class="sort-icon ml-2 flex-shrink-0">
-                                                    <i class="fa-solid fa-sort text-xs"
-                                                       [class.fa-sort-up]="currentSort.column === 'diagnosticCode' && currentSort.direction === 'asc'"
-                                                       [class.fa-sort-down]="currentSort.column === 'diagnosticCode' && currentSort.direction === 'desc'"
-                                                       [class.fa-sort]="currentSort.column !== 'diagnosticCode'"
-                                                       [class.text-blue-600]="currentSort.column === 'diagnosticCode'"
-                                                       [class.text-gray-400]="currentSort.column !== 'diagnosticCode'"></i>
-                                                </span>
-                                            </div>
-                                        </th>
-                                        <th class="px-3 py-3 text-left sortable cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap" 
-                                            data-sort="status"
-                                            [class.sort-asc]="currentSort.column === 'status' && currentSort.direction === 'asc'"
-                                            [class.sort-desc]="currentSort.column === 'status' && currentSort.direction === 'desc'"
-                                            (click)="sortTable('status')"
-                                            title="Click to sort by Status">
-                                            <div class="flex items-center justify-between min-w-0">
-                                                <span class="truncate">Status</span>                                                <span class="sort-icon ml-2 flex-shrink-0">
-                                                    <i class="fa-solid fa-sort text-xs"
-                                                       [class.fa-sort-up]="currentSort.column === 'status' && currentSort.direction === 'asc'"
-                                                       [class.fa-sort-down]="currentSort.column === 'status' && currentSort.direction === 'desc'"
-                                                       [class.fa-sort]="currentSort.column !== 'status'"
-                                                       [class.text-blue-600]="currentSort.column === 'status'"
-                                                       [class.text-gray-400]="currentSort.column !== 'status'"></i>
-                                                </span>
-                                            </div>
-                                        </th>
-                                        <th class="px-3 py-3 text-left sortable cursor-pointer hover:bg-gray-100 select-none" 
-                                            data-sort="condition"
-                                            [class.sort-asc]="currentSort.column === 'condition' && currentSort.direction === 'asc'"
-                                            [class.sort-desc]="currentSort.column === 'condition' && currentSort.direction === 'desc'"
-                                            (click)="sortTable('condition')"
-                                            title="Click to sort by Condition">
-                                            <div class="flex items-center justify-between min-w-0">
-                                                <span class="truncate">Condition</span>                                                <span class="sort-icon ml-2 flex-shrink-0">
-                                                    <i class="fa-solid fa-sort text-xs"
-                                                       [class.fa-sort-up]="currentSort.column === 'condition' && currentSort.direction === 'asc'"
-                                                       [class.fa-sort-down]="currentSort.column === 'condition' && currentSort.direction === 'desc'"
-                                                       [class.fa-sort]="currentSort.column !== 'condition'"
-                                                       [class.text-blue-600]="currentSort.column === 'condition'"
-                                                       [class.text-gray-400]="currentSort.column !== 'condition'"></i>
-                                                </span>
-                                            </div>
-                                        </th>
-                                        <th class="px-3 py-3 text-left sortable cursor-pointer hover:bg-gray-100 select-none whitespace-nowrap" 
-                                            data-sort="rating"
-                                            [class.sort-asc]="currentSort.column === 'rating' && currentSort.direction === 'asc'"
-                                            [class.sort-desc]="currentSort.column === 'rating' && currentSort.direction === 'desc'"
-                                            (click)="sortTable('rating')"
-                                            title="Click to sort by Rating">
-                                            <div class="flex items-center justify-between min-w-0">
-                                                <span class="truncate">Rating</span>                                                <span class="sort-icon ml-2 flex-shrink-0">
-                                                    <i class="fa-solid fa-sort text-xs"
-                                                       [class.fa-sort-up]="currentSort.column === 'rating' && currentSort.direction === 'asc'"
-                                                       [class.fa-sort-down]="currentSort.column === 'rating' && currentSort.direction === 'desc'"
-                                                       [class.fa-sort]="currentSort.column !== 'rating'"
-                                                       [class.text-blue-600]="currentSort.column === 'rating'"
-                                                       [class.text-gray-400]="currentSort.column !== 'rating'"></i>
-                                                </span>
-                                            </div>
-                                        </th>                                        <th class="px-3 py-3 text-left whitespace-nowrap">
-                                            <span class="truncate">Static?</span>
-                                        </th>
+                                        <th class="px-3 py-3 text-left">Diag. Code</th>
+                                        <th class="px-6 py-3 text-left">Status</th>
+                                        <th class="px-6 py-3 text-left">Condition</th>
+                                        <th class="px-6 py-3 text-left">Rating</th>
+                                        <th class="px-6 py-3 text-left">Static?</th>
                                     </tr>
                                 </thead>
                                 <tbody #disabilityRows class="divide-y divide-gray-200 bg-white">
