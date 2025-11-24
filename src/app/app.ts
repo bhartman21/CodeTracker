@@ -503,9 +503,10 @@ export class App implements OnInit, AfterViewInit, OnDestroy {
                     const bCondition = (b.diagnostic_text || '').toLowerCase();
                     return this.currentSort.direction === 'asc' 
                         ? aCondition.localeCompare(bCondition)
-                        : bCondition.localeCompare(aCondition);                      case 'rating':
-                    const aRating = parseInt(a.rating_percentage || '0') || 0;
-                    const bRating = parseInt(b.rating_percentage || '0') || 0;
+                        : bCondition.localeCompare(aCondition);                case 'rating':
+                    // Treat non-service connected items as -1 for sorting purposes
+                    const aRating = (a.decision === 'Not Service Connected' && a.rating_percentage === '0') ? -1 : parseInt(a.rating_percentage || '0') || 0;
+                    const bRating = (b.decision === 'Not Service Connected' && b.rating_percentage === '0') ? -1 : parseInt(b.rating_percentage || '0') || 0;
                     return this.currentSort.direction === 'asc' ? aRating - bRating : bRating - aRating;
                     
                 default:

@@ -262,11 +262,9 @@
                                     <tr *ngFor="let disability of disabilityRatings; let i = index" [ngClass]="[i % 2 === 0 ? 'bg-white' : 'bg-gray-300', 'hover:bg-blue-200']">
                                         <td>
                                             {{ disability.diagnostic_type_code || '' }}
-                                            <span *ngIf="disability.hyph_diagnostic_type_code">[{{ disability.hyph_diagnostic_type_code }}]</span>
-                                        </td>
-                                        <td>{{ disability.decision || 'N/A' }}</td>
-                                        <td>{{ disability.diagnostic_text }}</td>
-                                        <td>{{ disability.rating_percentage }}%</td>
+                                            <span *ngIf="disability.hyph_diagnostic_type_code">[{{ disability.hyph_diagnostic_type_code }}]</span>                                        </td>                                        <td class="whitespace-nowrap">{{ disability.decision || 'N/A' }}</td>
+                                        <td><span class="condition-text" [title]="disability.diagnostic_text">{{ disability.diagnostic_text }}</span></td>
+                                        <td>{{ (disability.decision === 'Not Service Connected' && disability.rating_percentage === '0') ? 'N/A' : disability.rating_percentage + '%' }}</td>
                                         <td class="text-center">
                                             <input *ngIf="disability.static_ind" type="checkbox" class="form-checkbox h-3 w-3 ring-green-600 ring-2" [checked]="disability.static_ind" disabled>
                                             <input *ngIf="!disability.static_ind" type="checkbox" class="form-checkbox h-3 w-3 ring-red-600 ring-2" [checked]="disability.static_ind" disabled>

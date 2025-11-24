@@ -414,3 +414,12 @@ body, html {
 #refreshButton.cursor-not-allowed {
   pointer-events: none;
 }
+
+/* Condition text truncation - limit to ~30 characters */
+.condition-text {
+  max-width: 240px; /* Approximately 30 characters at 8px per char */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
